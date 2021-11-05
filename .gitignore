@@ -1,0 +1,6 @@
+.directory
+.vs
+Debug
+
+*.dll
+*.pdb
