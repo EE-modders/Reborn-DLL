@@ -2,6 +2,7 @@
 #include "RebornDLL.h"
 #include <Windows.h>
 #include <iostream>
+#include <sstream>
 
 /* memory values for EEC GOG */
 
@@ -16,6 +17,8 @@ DWORD MaxPitchAddr      = 0x513284; // 0.0: 0d pitch; -1.0: 90d pitch | float
 DWORD CurrPitchAddr     = 0x5183c8; // float
 
 DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
+
+DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
 
 //all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
@@ -95,6 +98,9 @@ void showMessage(int val) {
 void showMessage(LPCSTR val) {
     std::cout << "DEBUG: " << val << std::endl;
 }
+void showMessage(DWORD val) {
+    std::cout << "DEBUG: " << val << std::endl;
+}
 
 /*###################################*/
 
@@ -115,6 +121,9 @@ void getResolution(int& x, int& y, threadSettings* tSet) {
 }
 
 void setResolutions(int xRes, int yRes, threadSettings* tSet) {
+    if (!tSet->bResPatch)
+        return;
+
     writeBytes(getAbsAddress(xResStartupAddr), &xRes, 4);
     writeBytes(getAbsAddress(yResStartupAddr), &yRes, 4);
     writeBytes(getAbsAddress(yResBINKAddr), &yRes, 4);
@@ -134,11 +143,53 @@ void setResolutions(int xRes, int yRes, threadSettings* tSet) {
 }
 
 void setCameraParams(threadSettings* tSet) {
+    if (!tSet->bCameraPatch)
+        return;
+
+    showMessage("AAA");
+    showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
+    showMessage(*(float*)getAbsAddress(FOVAddr));
+    showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
+    showMessage(*(float*)getAbsAddress(MaxPitchAddr));
+    showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
+
     writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->fMaxZHeight, 4);
-    writeBytes(getAbsAddress(FOVAddr), &tSet->fFOV, 4);
     writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->fFOGDistance, 4);
+    writeBytes(getAbsAddress(FOVAddr), &tSet->fFOV, 4);
     writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4);
     writeBytes(getAbsAddress(MaxPitchAddr), &tSet->fCameraPitch, 4);
+
+    showMessage("BBB");
+    showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
+    showMessage(*(float*)getAbsAddress(FOVAddr));
+    showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
+    showMessage(*(float*)getAbsAddress(MaxPitchAddr));
+    showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
+}
+
+void setVersionString() {
+    char*** version = (char***)getAbsAddress(versionStrPtrAddr);
+
+    char newVersionString[32];
+    char verStr[] = " (RebornDLL v1.1)";
+    DWORD nVp = (DWORD)&newVersionString;
+    DWORD* nVp_p = &nVp;
+
+    /* THIS SHIT DOES NOT WORK, DON'T ASK ME WHY!!!!
+    std::stringstream ss;
+    ss << version << " ";
+    ss << "(RebornDLL v" << version_maj << "." << version_min << ")\0";
+    std::string verStr = ss.str();
+    memcpy(nVstr, verStr.c_str(), 33);
+    */
+
+    memcpy(newVersionString, **version, 16);
+    memcpy(newVersionString + 16, verStr, 18);
+
+    showMessage(newVersionString);
+    showMessage(&nVp_p);
+    writeBytes(version, &nVp_p, 4);
+    showMessage(**version);
 }
 
 int MainEntry(threadSettings* tSettings) {
@@ -163,6 +214,7 @@ int MainEntry(threadSettings* tSettings) {
     }
 
     // TODO: check if EE version is supported
+    setVersionString();
 
     for (;; Sleep(5000)) {
         getResolution(xRes, yRes, tSettings);
@@ -178,6 +230,7 @@ int MainEntry(threadSettings* tSettings) {
         }
         else
             std::cout << ".";
+
         if (tSettings->bWINE)
             break;
     }

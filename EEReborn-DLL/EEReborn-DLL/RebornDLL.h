@@ -2,7 +2,7 @@
 #include <Windows.h>
 
 const int version_maj = 1;
-const int version_min = 0;
+const int version_min = 1;
 
 struct memoryPTR {
     DWORD base_address;
@@ -14,6 +14,8 @@ struct threadSettings {
     bool bWINE;                     // for internal use
     bool bDebugMode;                // enables debug mode
     bool bForceScenarioEditor;      // force resolution of scenario editor (will look weird)
+    bool bCameraPatch;              // enables camera patch
+    bool bResPatch;                 // enabled resolution patch
     float fMaxZHeight;              // -0 to -99
     float fFOV;                     // 0.0 to 0.89 (crashes with and above 0.9)
     float fFOGDistance;             // 0.0 to 90.0 (crashes with and above 70.0)

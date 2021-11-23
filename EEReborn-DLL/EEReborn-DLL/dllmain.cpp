@@ -43,6 +43,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             threadSettings* tData = new threadSettings;
             tData->bDebugMode = GetPrivateProfileIntA("Debug", "DebugMode", 0, path) != 0;
             tData->bCustomResolution = GetPrivateProfileIntA("Debug", "CustomResolution", 0, path) != 0;
+            tData->bCameraPatch = GetPrivateProfileIntA("Camera", "CameraPatch", 0, path) != 0;
+            tData->bResPatch = GetPrivateProfileIntA("Resolution", "ResPatch", 0, path) != 0;
             tData->xResolution = GetPrivateProfileIntA("Debug", "xResolution", 1024, path);
             tData->yResolution = GetPrivateProfileIntA("Debug", "yResolution", 768, path);
             tData->bForceScenarioEditor = GetPrivateProfileIntA("Resolution", "forceScenarioEditor", 0, path) != 0;
