@@ -1,6 +1,8 @@
 .directory
 .vs
 Debug
+Release
 
 *.dll
 *.pdb
+*.zip
