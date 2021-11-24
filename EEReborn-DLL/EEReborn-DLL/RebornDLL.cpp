@@ -175,7 +175,9 @@ void setVersionString() {
     DWORD nVp = (DWORD)&newVersionString;
     DWORD* nVp_p = &nVp;
 
-    /* THIS SHIT DOES NOT WORK, DON'T ASK ME WHY!!!!
+    // THIS SHIT DOES NOT WORK, DON'T ASK ME WHY!!!!
+    // TODO: fix
+    /*
     std::stringstream ss;
     ss << version << " ";
     ss << "(RebornDLL v" << version_maj << "." << version_min << ")\0";
@@ -214,6 +216,7 @@ int MainEntry(threadSettings* tSettings) {
     }
 
     // TODO: check if EE version is supported
+
     setVersionString();
 
     for (;; Sleep(5000)) {
