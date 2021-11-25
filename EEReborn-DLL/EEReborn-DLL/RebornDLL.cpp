@@ -20,7 +20,7 @@ DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
 
 DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
 
-//all following values are int
+// all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
 DWORD yResSettingsAddr  = 0x5193F8;
 DWORD bitSettingsAddr   = 0x5193F4;
@@ -37,6 +37,19 @@ DWORD yResMainMenuAddr  = 0x25FAC9;
 
 DWORD xResScenarioEditorAddr = 0x2601EB; // scenario editor resoluton
 DWORD yResScenarioEditorAddr = 0x2601E6;
+// ---
+
+// EE Objects
+
+DWORD EEDataPtrAddr = 0x517BB8; // this will be non 00 when EEData is loaded
+
+// ---
+
+memoryPTR maxUnitsPTR = {
+    EEDataPtrAddr,
+    1,
+    { 0x2EC }
+};
 
 /*###################################*/
 
@@ -194,6 +207,18 @@ void setVersionString() {
     showMessage(**version);
 }
 
+void setMaxUnits(int value) {
+    showMessage("Setting MaxUnits");
+    int* maxU_p = (int*)tracePointer(&maxUnitsPTR);
+    showMessage(*maxU_p);
+    writeBytes(maxU_p, &value, 4);
+    showMessage(*maxU_p);
+}
+
+bool isLoaded() {
+    return 0 != *(int*)getAbsAddress(EEDataPtrAddr);
+}
+
 int MainEntry(threadSettings* tSettings) {
     FILE* f;
     int xRes, yRes;
@@ -236,6 +261,13 @@ int MainEntry(threadSettings* tSettings) {
 
         if (tSettings->bWINE)
             break;
+
+        while (!isLoaded()) {
+            showMessage("Waiting for EE to be loaded...");
+            Sleep(500);
+        }
+
+        setMaxUnits(2000);
     }
 
     FreeConsole();
