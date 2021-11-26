@@ -280,8 +280,12 @@ int MainEntry(threadSettings* tSettings) {
             break;
 
         if (isLoaded()) {
-            showMessage("Waiting for EE to be loaded...");
+            showMessage("EE is loaded...");
             setGameSettings(&tSettings->game);
+        }
+        else
+        {
+            showMessage("EE is not loaded...");
         }
     }
 
