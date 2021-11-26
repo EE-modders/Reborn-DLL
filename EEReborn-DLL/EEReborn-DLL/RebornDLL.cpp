@@ -123,9 +123,9 @@ void startupMessage() {
 }
 
 void getResolution(int& x, int& y, threadSettings* tSet) {
-    if (tSet->bCustomResolution) {
-        x = tSet->xResolution;
-        y = tSet->yResolution;
+    if (tSet->resolution.bCustomResolution) {
+        x = tSet->resolution.xResolution;
+        y = tSet->resolution.yResolution;
     }
     else {
         x = *(int*)(getAbsAddress(xResSettingsAddr));
@@ -133,9 +133,13 @@ void getResolution(int& x, int& y, threadSettings* tSet) {
     }
 }
 
-void setResolutions(int xRes, int yRes, threadSettings* tSet) {
-    if (!tSet->bResPatch)
+void setResolutions(int xRes, int yRes, resolutionSettings* tSet) {
+    showMessage("Pre Resolution Settings");
+
+    if (!tSet->bResPatch) {
+        showMessage("Skipped...");
         return;
+    }
 
     writeBytes(getAbsAddress(xResStartupAddr), &xRes, 4);
     writeBytes(getAbsAddress(yResStartupAddr), &yRes, 4);
@@ -152,35 +156,53 @@ void setResolutions(int xRes, int yRes, threadSettings* tSet) {
         writeBytes(getAbsAddress(yResScenarioEditorAddr), &yRes, 4);
     }
 
-    showMessage("patching done");
+    showMessage("Post Resolution Settings");
+}
+
+//showMessage((((std::string)"GET : MaxUnits = ") + std::to_string(*maxU_p)).c_str());
+
+void setGameSettings(gameSettings* tGameSet) {
+    showMessage("Pre Game Settings");
+
+    int* maxU_p = (int*)tracePointer(&maxUnitsPTR);
+    writeBytes(maxU_p, &tGameSet->maxUnits, 4);
+
+    showMessage("Post Game Settings");
 }
 
 void setCameraParams(threadSettings* tSet) {
-    if (!tSet->bCameraPatch)
+    showMessage("Pre Camera Params");
+
+    if (!tSet->camera.bCameraPatch) {
+        showMessage("Skipped...");
         return;
+    }
 
-    showMessage("AAA");
     showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
     showMessage(*(float*)getAbsAddress(FOVAddr));
     showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
     showMessage(*(float*)getAbsAddress(MaxPitchAddr));
     showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
 
-    writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->fMaxZHeight, 4);
-    writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->fFOGDistance, 4);
-    writeBytes(getAbsAddress(FOVAddr), &tSet->fFOV, 4);
-    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4);
-    writeBytes(getAbsAddress(MaxPitchAddr), &tSet->fCameraPitch, 4);
+    writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->camera.fMaxZHeight, 4);
+    writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->camera.fFOGDistance, 4);
+    writeBytes(getAbsAddress(FOVAddr), &tSet->camera.fFOV, 4);
+    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->camera.zoomStyle, 4);
+    writeBytes(getAbsAddress(MaxPitchAddr), &tSet->camera.fCameraPitch, 4);
 
-    showMessage("BBB");
     showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
     showMessage(*(float*)getAbsAddress(FOVAddr));
     showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
     showMessage(*(float*)getAbsAddress(MaxPitchAddr));
     showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
+
+    showMessage("Post Camera Params");
+
 }
 
 void setVersionString() {
+    showMessage("Pre Version Patch");
+
     char*** version = (char***)getAbsAddress(versionStrPtrAddr);
 
     char newVersionString[32];
@@ -205,14 +227,7 @@ void setVersionString() {
     showMessage(&nVp_p);
     writeBytes(version, &nVp_p, 4);
     showMessage(**version);
-}
-
-void setMaxUnits(int value) {
-    showMessage("Setting MaxUnits");
-    int* maxU_p = (int*)tracePointer(&maxUnitsPTR);
-    showMessage(*maxU_p);
-    writeBytes(maxU_p, &value, 4);
-    showMessage(*maxU_p);
+    showMessage("Post Version Patch");
 }
 
 bool isLoaded() {
@@ -229,15 +244,16 @@ int MainEntry(threadSettings* tSettings) {
         freopen_s(&f, "CONOUT$", "w", stdout);
         startupMessage();
         showMessage(tSettings->bWINE);
-        showMessage(tSettings->fMaxZHeight);
-        showMessage(tSettings->fFOV);
-        showMessage(tSettings->fFOGDistance);
-        showMessage(tSettings->zoomStyle);
-        showMessage(tSettings->fCameraPitch);
-        showMessage(tSettings->bForceScenarioEditor);
         showMessage(tSettings->bDebugMode);
-        showMessage(tSettings->xResolution);
-        showMessage(tSettings->yResolution);
+
+        showMessage(tSettings->camera.fMaxZHeight);
+        showMessage(tSettings->camera.fFOV);
+        showMessage(tSettings->camera.fFOGDistance);
+        showMessage(tSettings->camera.zoomStyle);
+        showMessage(tSettings->camera.fCameraPitch);
+        showMessage(tSettings->resolution.xResolution);
+        showMessage(tSettings->resolution.yResolution);
+        showMessage(tSettings->resolution.bForceScenarioEditor);
     }
 
     // TODO: check if EE version is supported
@@ -245,29 +261,28 @@ int MainEntry(threadSettings* tSettings) {
     setVersionString();
 
     for (;; Sleep(5000)) {
-        getResolution(xRes, yRes, tSettings);
-        
-        std::cout << "xRes: " << xRes << std::endl;
-        std::cout << "yRes: " << yRes << std::endl;
+        showMessage("Loop");
 
+        getResolution(xRes, yRes, tSettings);
         bResMismatchX = xRes != *(int*)(getAbsAddress(xResStartupAddr));
         bResMismatchY = yRes != *(int*)(getAbsAddress(yResStartupAddr));
         if (bResMismatchX || bResMismatchY) {
-            setResolutions(xRes, yRes, tSettings);
+            std::cout << "xRes: " << xRes << std::endl;
+            std::cout << "yRes: " << yRes << std::endl;
+            setResolutions(xRes, yRes, &tSettings->resolution);
             setCameraParams(tSettings);
         }
-        else
-            std::cout << ".";
+        else {
+            showMessage("Resolution OK");
+        }
 
         if (tSettings->bWINE)
             break;
 
-        while (!isLoaded()) {
+        if (isLoaded()) {
             showMessage("Waiting for EE to be loaded...");
-            Sleep(500);
+            setGameSettings(&tSettings->game);
         }
-
-        setMaxUnits(2000);
     }
 
     FreeConsole();

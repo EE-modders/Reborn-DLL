@@ -41,19 +41,24 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
             /* read data from ini file */
             threadSettings* tData = new threadSettings;
+
             tData->bDebugMode = GetPrivateProfileIntA("Debug", "DebugMode", 0, path) != 0;
-            tData->bCustomResolution = GetPrivateProfileIntA("Debug", "CustomResolution", 0, path) != 0;
-            tData->bCameraPatch = GetPrivateProfileIntA("Camera", "CameraPatch", 0, path) != 0;
-            tData->bResPatch = GetPrivateProfileIntA("Resolution", "ResPatch", 0, path) != 0;
-            tData->xResolution = GetPrivateProfileIntA("Debug", "xResolution", 1024, path);
-            tData->yResolution = GetPrivateProfileIntA("Debug", "yResolution", 768, path);
-            tData->bForceScenarioEditor = GetPrivateProfileIntA("Resolution", "forceScenarioEditor", 0, path) != 0;
-            tData->fMaxZHeight = static_cast<float>(GetPrivateProfileIntA("Camera", "MaxZ", 30, path)) * -1.0f;
-            tData->fFOV = static_cast<float>(GetPrivateProfileIntA("Camera", "FOV", 60, path)) / 100.0f;
-            tData->fFOGDistance = static_cast<float>(GetPrivateProfileIntA("Camera", "Fog", 50, path));
-            tData->zoomStyle = GetPrivateProfileIntA("Camera", "Style", 2, path);
-            tData->fCameraPitch = static_cast<float>(GetPrivateProfileIntA("Camera", "Pitch", 33, path)) / 100.0f * -1.0f;
             tData->bWINE = runsWINE();
+
+            tData->resolution.bCustomResolution = GetPrivateProfileIntA("Debug", "CustomResolution", 0, path) != 0;
+            tData->resolution.bResPatch = GetPrivateProfileIntA("Resolution", "ResPatch", 0, path) != 0;
+            tData->resolution.xResolution = GetPrivateProfileIntA("Debug", "xResolution", 1024, path);
+            tData->resolution.yResolution = GetPrivateProfileIntA("Debug", "yResolution", 768, path);
+            tData->resolution.bForceScenarioEditor = GetPrivateProfileIntA("Resolution", "forceScenarioEditor", 0, path) != 0;
+
+            tData->camera.bCameraPatch = GetPrivateProfileIntA("Camera", "CameraPatch", 0, path) != 0;
+            tData->camera.fMaxZHeight = static_cast<float>(GetPrivateProfileIntA("Camera", "MaxZ", 30, path)) * -1.0f;
+            tData->camera.fFOV = static_cast<float>(GetPrivateProfileIntA("Camera", "FOV", 60, path)) / 100.0f;
+            tData->camera.fFOGDistance = static_cast<float>(GetPrivateProfileIntA("Camera", "Fog", 50, path));
+            tData->camera.zoomStyle = GetPrivateProfileIntA("Camera", "Style", 2, path);
+            tData->camera.fCameraPitch = static_cast<float>(GetPrivateProfileIntA("Camera", "Pitch", 33, path)) / 100.0f * -1.0f;
+
+            tData->game.maxUnits = GetPrivateProfileIntA("Game", "MaxUnits", 1200, path);
 
             /*
             _beginthreadex crashes under WINE for some reason
