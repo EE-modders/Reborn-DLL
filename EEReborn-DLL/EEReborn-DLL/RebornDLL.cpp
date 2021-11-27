@@ -118,7 +118,7 @@ void showMessage(DWORD val) {
 /*###################################*/
 
 void startupMessage() {
-    std::cout << "RebornDLL by zocker_160 - Version: v" << version_maj << "." << version_min << std::endl;
+    std::cout << "RebornDLL by zocker_160 & EnergyCube- Version: v" << version_maj << "." << version_min << std::endl;
     std::cout << "Debug mode enabled!\n";
 }
 
