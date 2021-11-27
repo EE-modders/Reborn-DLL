@@ -223,7 +223,7 @@ void setVersionString() {
     */
 
     memcpy(newVersionString, **version, 16);
-    memcpy(newVersionString + 16, verStr, 18);
+    memcpy(newVersionString + 16, verStr, sizeof(verStr));
 
     showMessage(newVersionString);
     showMessage(&nVp_p);
