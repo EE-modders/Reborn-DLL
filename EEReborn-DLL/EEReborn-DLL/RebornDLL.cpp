@@ -206,7 +206,9 @@ void setVersionString() {
     char*** version = (char***)getAbsAddress(versionStrPtrAddr);
 
     char newVersionString[32];
-    char verStr[] = " (RebornDLL v1.1)";
+    char verStr[] = " (RebornDLL vX.X)";
+    verStr[13] = 0x30 + version_maj;
+    verStr[15] = 0x30 + version_min;
     DWORD nVp = (DWORD)&newVersionString;
     DWORD* nVp_p = &nVp;
 
