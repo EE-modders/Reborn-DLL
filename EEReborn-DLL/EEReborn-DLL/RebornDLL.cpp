@@ -118,48 +118,80 @@ void showMessage(DWORD val) {
 /*###################################*/
 
 void startupMessage() {
-    std::cout << "RebornDLL by zocker_160 & EnergyCube- Version: v" << version_maj << "." << version_min << std::endl;
+    std::cout << "RebornDLL by zocker_160 & EnergyCube - Version: v" << version_maj << "." << version_min << std::endl;
     std::cout << "Debug mode enabled!\n";
 }
 
-void getResolution(int& x, int& y, threadSettings* tSet) {
-    if (tSet->resolution.bCustomResolution) {
-        x = tSet->resolution.xResolution;
-        y = tSet->resolution.yResolution;
+void GetDesktopResolution(int& horizontal, int& vertical)
+{
+    RECT desktop;
+    const HWND hDesktop = GetDesktopWindow();
+    GetWindowRect(hDesktop, &desktop);
+    horizontal = desktop.right;
+    vertical = desktop.bottom;
+}
+
+void getResolution(int& x, int& y, resolutionSettings* tSet) {
+
+    if (tSet->ResPatchType == 3) { // Forced
+        x = tSet->xResolution;
+        y = tSet->yResolution;
     }
-    else {
+    else if (tSet->ResPatchType == 2) // Manual
+    {
         x = *(int*)(getAbsAddress(xResSettingsAddr));
         y = *(int*)(getAbsAddress(yResSettingsAddr));
     }
+    else if (tSet->ResPatchType == 1) { // Auto (use windows resolution)
+        GetDesktopResolution(x, y);
+    }
+    else { // In case any other value is set
+        GetDesktopResolution(x, y);
+    }
+
 }
 
-void setResolutions(int xRes, int yRes, resolutionSettings* tSet) {
+void setResolutions(resolutionSettings* tSet) {
     showMessage("Pre Resolution Settings");
 
-    if (!tSet->bResPatch) {
+    if (tSet->ResPatchType == 0) { // Disabled
         showMessage("Skipped...");
         return;
     }
 
-    writeBytes(getAbsAddress(xResStartupAddr), &xRes, 4);
-    writeBytes(getAbsAddress(yResStartupAddr), &yRes, 4);
-    writeBytes(getAbsAddress(yResBINKAddr), &yRes, 4);
+    int xRes, yRes;
+    bool bResMismatchX, bResMismatchY;
 
-    writeBytes(getAbsAddress(xResStartupMainMenuAddr), &xRes, 4);
-    writeBytes(getAbsAddress(yResStartupMainMenuAddr), &yRes, 4);
 
-    writeBytes(getAbsAddress(xResMainMenuAddr), &xRes, 4);
-    writeBytes(getAbsAddress(yResMainMenuAddr), &yRes, 4);
+    getResolution(xRes, yRes, tSet);
+    
+    bResMismatchX = xRes != *(int*)(getAbsAddress(xResStartupAddr));
+    bResMismatchY = yRes != *(int*)(getAbsAddress(yResStartupAddr));
+    if (bResMismatchX || bResMismatchY) {
+        std::cout << "Resolution don't match" << std::endl;
+        std::cout << "Current : " << bResMismatchX << "x" << bResMismatchY << std::endl;
+        std::cout << "Wanted : " << xRes << "x" << yRes << std::endl;
+        std::cout << "Set new resolution (type : " << tSet->ResPatchType << ")" << std::endl;
 
-    if (tSet->bForceScenarioEditor) {
-        writeBytes(getAbsAddress(xResScenarioEditorAddr), &xRes, 4);
-        writeBytes(getAbsAddress(yResScenarioEditorAddr), &yRes, 4);
+        writeBytes(getAbsAddress(xResStartupAddr), &xRes, 4);
+        writeBytes(getAbsAddress(yResStartupAddr), &yRes, 4);
+        writeBytes(getAbsAddress(yResBINKAddr), &yRes, 4);
+
+        writeBytes(getAbsAddress(xResStartupMainMenuAddr), &xRes, 4);
+        writeBytes(getAbsAddress(yResStartupMainMenuAddr), &yRes, 4);
+
+        writeBytes(getAbsAddress(xResMainMenuAddr), &xRes, 4);
+        writeBytes(getAbsAddress(yResMainMenuAddr), &yRes, 4);
+
+        if (tSet->bForceScenarioEditor) {
+            showMessage("Forced Scenario Editor");
+            writeBytes(getAbsAddress(xResScenarioEditorAddr), &xRes, 4);
+            writeBytes(getAbsAddress(yResScenarioEditorAddr), &yRes, 4);
+        }
     }
 
     showMessage("Post Resolution Settings");
 }
-
-//showMessage((((std::string)"GET : MaxUnits = ") + std::to_string(*maxU_p)).c_str());
 
 void setGameSettings(gameSettings* tGameSet) {
     showMessage("Pre Game Settings");
@@ -170,10 +202,10 @@ void setGameSettings(gameSettings* tGameSet) {
     showMessage("Post Game Settings");
 }
 
-void setCameraParams(threadSettings* tSet) {
+void setCameraParams(cameraSettings* tSet) {
     showMessage("Pre Camera Params");
 
-    if (!tSet->camera.bCameraPatch) {
+    if (!tSet->bCameraPatch) {
         showMessage("Skipped...");
         return;
     }
@@ -184,11 +216,11 @@ void setCameraParams(threadSettings* tSet) {
     showMessage(*(float*)getAbsAddress(MaxPitchAddr));
     showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
 
-    writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->camera.fMaxZHeight, 4);
-    writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->camera.fFOGDistance, 4);
-    writeBytes(getAbsAddress(FOVAddr), &tSet->camera.fFOV, 4);
-    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->camera.zoomStyle, 4);
-    writeBytes(getAbsAddress(MaxPitchAddr), &tSet->camera.fCameraPitch, 4);
+    writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->fMaxZHeight, 4);
+    writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->fFOGDistance, 4);
+    writeBytes(getAbsAddress(FOVAddr), &tSet->fFOV, 4);
+    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4);
+    writeBytes(getAbsAddress(MaxPitchAddr), &tSet->fCameraPitch, 4);
 
     showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
     showMessage(*(float*)getAbsAddress(FOVAddr));
@@ -238,8 +270,6 @@ bool isLoaded() {
 
 int MainEntry(threadSettings* tSettings) {
     FILE* f;
-    int xRes, yRes;
-    bool bResMismatchX, bResMismatchY;
 
     if (tSettings->bDebugMode) {
         AllocConsole();
@@ -265,18 +295,8 @@ int MainEntry(threadSettings* tSettings) {
     for (;; Sleep(5000)) {
         showMessage("Loop");
 
-        getResolution(xRes, yRes, tSettings);
-        bResMismatchX = xRes != *(int*)(getAbsAddress(xResStartupAddr));
-        bResMismatchY = yRes != *(int*)(getAbsAddress(yResStartupAddr));
-        if (bResMismatchX || bResMismatchY) {
-            std::cout << "xRes: " << xRes << std::endl;
-            std::cout << "yRes: " << yRes << std::endl;
-            setResolutions(xRes, yRes, &tSettings->resolution);
-            setCameraParams(tSettings);
-        }
-        else {
-            showMessage("Resolution OK");
-        }
+        setResolutions(&tSettings->resolution);
+        setCameraParams(&tSettings->camera);
 
         if (tSettings->bWINE)
             break;

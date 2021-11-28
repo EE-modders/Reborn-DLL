@@ -20,7 +20,7 @@ struct cameraSettings {
 };
 
 struct resolutionSettings {
-    bool bResPatch;                 // enabled resolution patch
+    int ResPatchType;               // enabled resolution patch (0 : Disabled | 1 : Windows | 2 : Game | 3 : Custom (Forced))
     bool bCustomResolution;         // enable custom resolutins specified
     int xResolution;                // 
     int yResolution;                // 
