@@ -45,7 +45,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             tData->bDebugMode = GetPrivateProfileIntA("Debug", "DebugMode", 0, path) != 0;
             tData->bWINE = runsWINE();
 
-            tData->resolution.ResPatchType = GetPrivateProfileIntA("Resolution", "ResPatchType", 1, path);
+            tData->resolution.ResPatchType = GetPrivateProfileIntA("Resolution", "ResPatchType", 2, path);
             tData->resolution.xResolution = GetPrivateProfileIntA("Resolution", "xResolution", 800, path);
             tData->resolution.yResolution = GetPrivateProfileIntA("Resolution", "yResolution", 600, path);
             tData->resolution.bForceScenarioEditor = GetPrivateProfileIntA("Resolution", "forceScenarioEditor", 0, path) != 0;

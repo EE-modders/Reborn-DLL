@@ -136,17 +136,14 @@ void getResolution(int& x, int& y, resolutionSettings* tSet) {
     if (tSet->ResPatchType == 3) { // Forced
         x = tSet->xResolution;
         y = tSet->yResolution;
-    }
-    else if (tSet->ResPatchType == 2) // Manual
-    {
+    } else if (tSet->ResPatchType == 2) { // Manual
         x = *(int*)(getAbsAddress(xResSettingsAddr));
         y = *(int*)(getAbsAddress(yResSettingsAddr));
-    }
-    else if (tSet->ResPatchType == 1) { // Auto (use windows resolution)
+    } else if (tSet->ResPatchType == 1) { // Auto (use windows resolution)
         GetDesktopResolution(x, y);
-    }
-    else { // In case any other value is set
-        GetDesktopResolution(x, y);
+    } else { // In case any other value is set
+        tSet->ResPatchType = 2;
+        getResolution(x, y, tSet);
     }
 
 }
@@ -159,34 +156,36 @@ void setResolutions(resolutionSettings* tSet) {
         return;
     }
 
-    int xRes, yRes;
+    int xWantedRes, yWantedRes, xCurrentRes, yCurrentRes;
     bool bResMismatchX, bResMismatchY;
 
 
-    getResolution(xRes, yRes, tSet);
+    getResolution(xWantedRes, yWantedRes, tSet);
+    xCurrentRes = *(int*)(getAbsAddress(xResStartupAddr));
+    yCurrentRes = *(int*)(getAbsAddress(yResStartupAddr));
     
-    bResMismatchX = xRes != *(int*)(getAbsAddress(xResStartupAddr));
-    bResMismatchY = yRes != *(int*)(getAbsAddress(yResStartupAddr));
+    bResMismatchX = xWantedRes != xCurrentRes;
+    bResMismatchY = yWantedRes != yCurrentRes;
     if (bResMismatchX || bResMismatchY) {
         std::cout << "Resolution don't match" << std::endl;
-        std::cout << "Current : " << bResMismatchX << "x" << bResMismatchY << std::endl;
-        std::cout << "Wanted : " << xRes << "x" << yRes << std::endl;
+        std::cout << "Current : " << xCurrentRes << "x" << yCurrentRes << std::endl;
+        std::cout << "Wanted : " << xWantedRes << "x" << yWantedRes << std::endl;
         std::cout << "Set new resolution (type : " << tSet->ResPatchType << ")" << std::endl;
 
-        writeBytes(getAbsAddress(xResStartupAddr), &xRes, 4);
-        writeBytes(getAbsAddress(yResStartupAddr), &yRes, 4);
-        writeBytes(getAbsAddress(yResBINKAddr), &yRes, 4);
+        writeBytes(getAbsAddress(xResStartupAddr), &xWantedRes, 4);
+        writeBytes(getAbsAddress(yResStartupAddr), &yWantedRes, 4);
+        writeBytes(getAbsAddress(yResBINKAddr), &yWantedRes, 4);
 
-        writeBytes(getAbsAddress(xResStartupMainMenuAddr), &xRes, 4);
-        writeBytes(getAbsAddress(yResStartupMainMenuAddr), &yRes, 4);
+        writeBytes(getAbsAddress(xResStartupMainMenuAddr), &xWantedRes, 4);
+        writeBytes(getAbsAddress(yResStartupMainMenuAddr), &yWantedRes, 4);
 
-        writeBytes(getAbsAddress(xResMainMenuAddr), &xRes, 4);
-        writeBytes(getAbsAddress(yResMainMenuAddr), &yRes, 4);
+        writeBytes(getAbsAddress(xResMainMenuAddr), &xWantedRes, 4);
+        writeBytes(getAbsAddress(yResMainMenuAddr), &yWantedRes, 4);
 
         if (tSet->bForceScenarioEditor) {
             showMessage("Forced Scenario Editor");
-            writeBytes(getAbsAddress(xResScenarioEditorAddr), &xRes, 4);
-            writeBytes(getAbsAddress(yResScenarioEditorAddr), &yRes, 4);
+            writeBytes(getAbsAddress(xResScenarioEditorAddr), &xWantedRes, 4);
+            writeBytes(getAbsAddress(yResScenarioEditorAddr), &yWantedRes, 4);
         }
     }
 
