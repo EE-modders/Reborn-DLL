@@ -1,0 +1,3 @@
+#include "resource.h"
+
+CONFIG_TEXT TEXT_FILE "Resources\\EEReborn.ini"

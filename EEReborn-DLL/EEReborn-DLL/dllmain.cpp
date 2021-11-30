@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "RebornDLL.h"
+#include "resource.h"
+#include <atlstr.h>
 #include <iostream>
 #include <thread>
 #include <string>
@@ -15,6 +17,38 @@ bool runsWINE() {
         return true;
     else
         return false;
+}
+
+
+void createConfig() {
+
+    if (PathFileExists(L"./EEReborn.ini")) // Skip if already present
+        return;
+
+    HMODULE hModule = NULL;
+    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+        (LPCSTR)&createConfig, &hModule);
+
+    HRSRC Maressource = FindResource(hModule, MAKEINTRESOURCE(CONFIG_TEXT),
+            MAKEINTRESOURCE(TEXT_FILE));
+
+    if (Maressource == 0)
+        return;
+
+    DWORD taille = SizeofResource(hModule, Maressource);
+    HGLOBAL hRessource = LoadResource(hModule, Maressource);
+
+    if (hRessource == 0)
+        return;
+
+    LPVOID ptr = LockResource(hRessource);
+    HANDLE hFile = CreateFile(L"./EEReborn.ini", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+    DWORD write;
+
+    WriteFile(hFile, ptr, taille, &write, 0);
+
+    CloseHandle(hFile);
+    FreeResource(hRessource);
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -33,11 +67,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             return true;
         }
         else {
-            char path[MAX_PATH];
-            HMODULE hm = NULL;
-            GetModuleFileNameA(hm, path, sizeof(path));
-            *strrchr(path, '\\') = '\0';
-            strcat_s(path, "\\EEReborn.ini");
+            LPCSTR path = "./EEReborn.ini";
+
+            createConfig();
 
             /* read data from ini file */
             threadSettings* tData = new threadSettings;

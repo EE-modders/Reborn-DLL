@@ -2,7 +2,7 @@
 #include <Windows.h>
 
 const int version_maj = 1;
-const int version_min = 2;
+const int version_min = 3;
 
 struct memoryPTR {
     DWORD base_address;
