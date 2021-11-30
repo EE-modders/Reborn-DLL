@@ -1,6 +1,11 @@
 #pragma once
 #include <Windows.h>
 
+#define RES_CUSTOM      0x3
+#define RES_GAME        0x2
+#define RES_WIN         0x1
+#define RES_DISABLED    0x0
+
 const int version_maj = 1;
 const int version_min = 3;
 

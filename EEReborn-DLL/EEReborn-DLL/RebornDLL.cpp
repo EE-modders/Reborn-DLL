@@ -133,25 +133,29 @@ void GetDesktopResolution(int& horizontal, int& vertical)
 
 void getResolution(int& x, int& y, resolutionSettings* tSet) {
 
-    if (tSet->ResPatchType == 3) { // Forced
+    switch (tSet->ResPatchType) {
+    case RES_CUSTOM:
         x = tSet->xResolution;
         y = tSet->yResolution;
-    } else if (tSet->ResPatchType == 2) { // Manual
+        break;
+    case RES_GAME:
         x = *(int*)(getAbsAddress(xResSettingsAddr));
         y = *(int*)(getAbsAddress(yResSettingsAddr));
-    } else if (tSet->ResPatchType == 1) { // Auto (use windows resolution)
+        break;
+    case RES_WIN:
         GetDesktopResolution(x, y);
-    } else { // In case any other value is set
-        tSet->ResPatchType = 2;
+        break;
+    default:
+        tSet->ResPatchType = RES_GAME;
         getResolution(x, y, tSet);
+        break;
     }
-
 }
 
 void setResolutions(resolutionSettings* tSet) {
     showMessage("Pre Resolution Settings");
 
-    if (tSet->ResPatchType == 0) { // Disabled
+    if (tSet->ResPatchType == RES_DISABLED) {
         showMessage("Skipped...");
         return;
     }
