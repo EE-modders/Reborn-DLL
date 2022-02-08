@@ -67,7 +67,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             return true;
         }
         else {
-            LPCSTR path = "./EEReborn.ini";
+            LPCSTR path = "./Reborn.ini";
 
             createConfig();
 
@@ -83,6 +83,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             tData->resolution.bForceScenarioEditor = GetPrivateProfileIntA("Resolution", "forceScenarioEditor", 0, path) != 0;
 
             tData->camera.bCameraPatch = GetPrivateProfileIntA("Camera", "CameraPatch", 0, path) != 0;
+
+            if (PathFileExists(L"./dreXmod.dll")) // v0.1, for the moment let's just ignore the camera patch if dreX is present
+                tData->camera.bCameraPatch = 0;
             tData->camera.fMaxZHeight = static_cast<float>(GetPrivateProfileIntA("Camera", "MaxZ", 30, path)) * -1.0f;
             tData->camera.fFOV = static_cast<float>(GetPrivateProfileIntA("Camera", "FOV", 60, path)) / 100.0f;
             tData->camera.fFOGDistance = static_cast<float>(GetPrivateProfileIntA("Camera", "Fog", 50, path));

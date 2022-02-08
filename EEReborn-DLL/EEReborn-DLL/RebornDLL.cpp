@@ -241,24 +241,9 @@ void setVersionString() {
     char*** version = (char***)getAbsAddress(versionStrPtrAddr);
 
     char newVersionString[32];
-    char verStr[] = " (RebornDLL vX.X)";
-    verStr[13] = 0x30 + version_maj;
-    verStr[15] = 0x30 + version_min;
+    char verStr[] = " (Reborn.dll v0.1 WIP)";
     DWORD nVp = (DWORD)&newVersionString;
     DWORD* nVp_p = &nVp;
-
-    // THIS SHIT DOES NOT WORK, DON'T ASK ME WHY!!!!
-    // TODO: fix
-    /*
-    std::stringstream ss;
-    ss << version << " ";
-    ss << "(RebornDLL v" << version_maj << "." << version_min << ")\0";
-    std::string verStr = ss.str();
-    memcpy(nVstr, verStr.c_str(), 33);
-    */
-
-    memcpy(newVersionString, **version, 16);
-    memcpy(newVersionString + 16, verStr, sizeof(verStr));
 
     showMessage(newVersionString);
     showMessage(&nVp_p);
@@ -294,25 +279,8 @@ int MainEntry(threadSettings* tSettings) {
     // TODO: check if EE version is supported
 
     setVersionString();
-
-    for (;; Sleep(5000)) {
-        showMessage("Loop");
-
-        setResolutions(&tSettings->resolution);
-        setCameraParams(&tSettings->camera);
-
-        if (tSettings->bWINE)
-            break;
-
-        if (isLoaded()) {
-            showMessage("EE is loaded...");
-            setGameSettings(&tSettings->game);
-        }
-        else
-        {
-            showMessage("EE is not loaded...");
-        }
-    }
+    setResolutions(&tSettings->resolution);
+    setCameraParams(&tSettings->camera);
 
     FreeConsole();
     return true;

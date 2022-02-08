@@ -6,8 +6,8 @@
 #define RES_WIN         0x1
 #define RES_DISABLED    0x0
 
-const int version_maj = 1;
-const int version_min = 3;
+const int version_maj = 0;
+const int version_min = 1;
 
 struct memoryPTR {
     DWORD base_address;
