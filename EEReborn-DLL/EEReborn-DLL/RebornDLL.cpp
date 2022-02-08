@@ -282,6 +282,24 @@ int MainEntry(threadSettings* tSettings) {
     setResolutions(&tSettings->resolution);
     setCameraParams(&tSettings->camera);
 
+    while (1) {
+        Sleep(500);
+        showMessage("Loop");
+
+        if (tSettings->bWINE) // idk why but it's on master
+            break;
+
+        if (isLoaded()) {
+            showMessage("EE is loaded...");
+            setGameSettings(&tSettings->game);
+            break;
+        }
+        else
+        {
+            showMessage("EE is not loaded...");
+        }
+    }
+
     FreeConsole();
     return true;
 }
