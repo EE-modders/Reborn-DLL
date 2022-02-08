@@ -22,7 +22,7 @@ bool runsWINE() {
 
 void createConfig() {
 
-    if (PathFileExists(L"./EEReborn.ini")) // Skip if already present
+    if (PathFileExists(L"./Reborn.ini")) // Skip if already present
         return;
 
     HMODULE hModule = NULL;
@@ -42,7 +42,7 @@ void createConfig() {
         return;
 
     LPVOID ptr = LockResource(hRessource);
-    HANDLE hFile = CreateFile(L"./EEReborn.ini", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+    HANDLE hFile = CreateFile(L"./Reborn.ini", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
     DWORD write;
 
     WriteFile(hFile, ptr, taille, &write, 0);
