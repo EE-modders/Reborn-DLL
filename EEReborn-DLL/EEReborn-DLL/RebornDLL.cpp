@@ -171,7 +171,7 @@ void setResolutions(resolutionSettings* tSet) {
     bResMismatchX = xWantedRes != xCurrentRes;
     bResMismatchY = yWantedRes != yCurrentRes;
     if (bResMismatchX || bResMismatchY) {
-        std::cout << "Resolution don't match" << std::endl;
+        std::cout << "Resolutions don't match" << std::endl;
         std::cout << "Current : " << xCurrentRes << "x" << yCurrentRes << std::endl;
         std::cout << "Wanted : " << xWantedRes << "x" << yWantedRes << std::endl;
         std::cout << "Set new resolution (type : " << tSet->ResPatchType << ")" << std::endl;
