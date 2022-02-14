@@ -19,6 +19,7 @@ DWORD CurrPitchAddr     = 0x5183c8; // float
 DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
 
 DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
+DWORD versionStrStatic  = 0x4A9030; // static version string
 
 // all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
@@ -241,6 +242,15 @@ bool isLoaded() {
     return 0 != *(int*)getAbsAddress(EEDataPtrAddr);
 }
 
+bool isSupportedVersion() {
+    char* currVerStr = (char*)getAbsAddress(versionStrStatic);
+
+    showMessage("static version string:");
+    showMessage(currVerStr);
+
+    return strcmp(supportedEEC, currVerStr) == 0;
+}
+
 int MainEntry(threadSettings* tSettings) {
     FILE* f;
 
@@ -261,7 +271,10 @@ int MainEntry(threadSettings* tSettings) {
         showMessage(tSettings->resolution.bForceScenarioEditor);
     }
 
-    // TODO: check if EE version is supported
+    if (!isSupportedVersion()) {
+        showMessage("this version of EE is not supported by Reborn.dll");
+        return true;
+    }
 
     setResolutions(&tSettings->resolution);
     setCameraParams(&tSettings->camera);
