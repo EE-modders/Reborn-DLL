@@ -17,7 +17,7 @@ struct memoryPTR {
 
 struct cameraSettings {
     bool bCameraPatch;              // enables camera patch
-    int zoomStyle;                  // 0, 1, 2 and 4
+    int zoomStyle;                  // 0, 1, 2
     float fMaxZHeight;              // -0 to -99
     float fFOV;                     // 0.0 to 0.89 (crashes with and above 0.9)
     float fFOGDistance;             // 0.0 to 90.0 (crashes with and above 70.0)

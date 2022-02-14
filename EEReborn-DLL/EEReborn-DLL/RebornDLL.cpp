@@ -10,7 +10,7 @@ DWORD MaxZHeightAddr    = 0x42C700; // float
 DWORD CurrZHeightAddr   = 0x518d40; // float
 DWORD LastZHeightAddr   = 0x518D08; // float
 DWORD ZoomStateAddr     = 0x518DB0; // 0.0: fully zoomed in; 1.0: fully zoomed out | float
-DWORD ZoomStyleAddr     = 0x518dc4; // 1, 2, 3 | int
+DWORD ZoomStyleAddr     = 0x518dc4; // 0, 1, 2 | int
 DWORD FOVAddr           = 0x51328c; // float
 DWORD FOGDistanceAddr   = 0x42c704; // float
 DWORD MaxPitchAddr      = 0x513284; // 0.0: 0d pitch; -1.0: 90d pitch | float
@@ -218,12 +218,14 @@ void setCameraParams(cameraSettings* tSet) {
     showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
     showMessage(*(float*)getAbsAddress(MaxPitchAddr));
     showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
-
+    
     writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->fMaxZHeight, 4);
+    //writeBytes(getAbsAddress(CurrZHeightAddr), &tSet->fMaxZHeight, 4);
     writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->fFOGDistance, 4);
     writeBytes(getAbsAddress(FOVAddr), &tSet->fFOV, 4);
-    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4);
+    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4); 
     writeBytes(getAbsAddress(MaxPitchAddr), &tSet->fCameraPitch, 4);
+    //writeBytes(getAbsAddress(CurrPitchAddr), &tSet->fCameraPitch, 4);
 
     showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
     showMessage(*(float*)getAbsAddress(FOVAddr));
@@ -233,23 +235,6 @@ void setCameraParams(cameraSettings* tSet) {
 
     showMessage("Post Camera Params");
 
-}
-
-void setVersionString() {
-    showMessage("Pre Version Patch");
-
-    char*** version = (char***)getAbsAddress(versionStrPtrAddr);
-
-    char newVersionString[32];
-    char verStr[] = " (Reborn.dll v0.1 WIP)";
-    DWORD nVp = (DWORD)&newVersionString;
-    DWORD* nVp_p = &nVp;
-
-    showMessage(newVersionString);
-    showMessage(&nVp_p);
-    writeBytes(version, &nVp_p, 4);
-    showMessage(**version);
-    showMessage("Post Version Patch");
 }
 
 bool isLoaded() {
@@ -278,7 +263,6 @@ int MainEntry(threadSettings* tSettings) {
 
     // TODO: check if EE version is supported
 
-    setVersionString();
     setResolutions(&tSettings->resolution);
     setCameraParams(&tSettings->camera);
 
@@ -290,6 +274,7 @@ int MainEntry(threadSettings* tSettings) {
             break;
 
         if (isLoaded()) {
+            // Patch and stop loop, we don't need anything else for the moment
             showMessage("EE is loaded...");
             setGameSettings(&tSettings->game);
             break;
@@ -307,23 +292,4 @@ int MainEntry(threadSettings* tSettings) {
 DWORD WINAPI RebornDLLThread(LPVOID param) {
     std::cout << "3...\n";
     return MainEntry(reinterpret_cast<threadSettings*>(param));
-}
-
-// rename to "DllMain" if you want to use this
-bool APIENTRY _DllMain_(HMODULE hModule,
-    DWORD  ul_reason_for_call,
-    LPVOID lpReserved
-) {
-    switch (ul_reason_for_call) {
-    case DLL_PROCESS_ATTACH:
-        //SetProcessDPIAware();
-        //CreateThread(0, 0, RebornDLLThread, hModule, 0, 0);
-        break;
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        FreeLibraryAndExitThread(hModule, 0);
-        break;
-    }
-    return true;
 }
