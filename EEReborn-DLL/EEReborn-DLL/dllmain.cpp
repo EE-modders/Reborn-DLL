@@ -95,13 +95,12 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             tData->game.maxUnits = GetPrivateProfileIntA("Game", "MaxUnits", 1200, path);
 
             /*
-            _beginthreadex crashes under WINE for some reason
+            _beginthreadex crashes under WINE < 7.1
             CreateThread crashes also on Windows
             */
-            if (tData->bWINE)
-                RebornDLLThread(tData);
-            else
-                HANDLE threadHandle = (HANDLE)_beginthreadex(0, 0, &MainThread, tData, 0, 0);
+
+            //RebornDLLThread(tData); // threadless workaround for old WINE
+            HANDLE threadHandle = (HANDLE)_beginthreadex(0, 0, &MainThread, tData, 0, 0);
             //CreateThread(0, 0, RebornDLLThread, tData, 0, 0); // this crashes for some reason
         }
         break;
