@@ -296,9 +296,7 @@ int MainEntry(threadSettings* tSettings) {
     setGameSettings(&tSettings->game);
 
     while (1) {
-        Sleep(500);
-        std::cout << ".";
-
+        Sleep(250);
         
         if (isPlaying() && !bWasPlaying) {
             showMessage("started playing");
