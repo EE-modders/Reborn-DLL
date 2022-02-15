@@ -300,18 +300,16 @@ int MainEntry(threadSettings* tSettings) {
         std::cout << ".";
 
         
-        if (isPlaying()) {
-            if (!bWasPlaying) {
-                showMessage("started playing");
+        if (isPlaying() && !bWasPlaying) {
+            showMessage("started playing");
 
-                setCameraParams(&tSettings->camera);
-                bWasPlaying = true;
-            }
-        } else {
-            if (bWasPlaying) {
-                showMessage("stopped playing");
-                bWasPlaying = false;
-            }
+            setCameraParams(&tSettings->camera);
+            bWasPlaying = true;
+        }
+
+        if (!isPlaying() && bWasPlaying) {
+            showMessage("stopped playing");
+            bWasPlaying = false;
         }
     }
 
