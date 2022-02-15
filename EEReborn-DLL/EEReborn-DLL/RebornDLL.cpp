@@ -21,6 +21,8 @@ DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
 DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
 DWORD versionStrStatic  = 0x4A9030; // static version string
 
+DWORD playerMapIsLoaded = 0x517BB8 + 0x7C4; // value is > 0 when map is loaded and running | float
+
 // all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
 DWORD yResSettingsAddr  = 0x5193F8;
@@ -242,6 +244,14 @@ bool isLoaded() {
     return 0 != *(int*)getAbsAddress(EEDataPtrAddr);
 }
 
+bool isPlaying() {
+    float fMapValue = *(float*)getAbsAddress(playerMapIsLoaded);
+
+    showMessage(fMapValue);
+
+    return fMapValue > FLT_EPSILON;
+}
+
 bool isSupportedVersion() {
     char* currVerStr = (char*)getAbsAddress(versionStrStatic);
 
@@ -289,7 +299,12 @@ int MainEntry(threadSettings* tSettings) {
             // Patch and stop loop, we don't need anything else for the moment
             showMessage("EE is loaded...");
             setGameSettings(&tSettings->game);
-            Sleep(2000);
+
+            while (!isPlaying()) {
+                showMessage("is not playing");
+                Sleep(500);
+            }
+
             setCameraParams(&tSettings->camera);
             break;
         }
