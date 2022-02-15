@@ -21,8 +21,6 @@ DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
 DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
 DWORD versionStrStatic  = 0x4A9030; // static version string
 
-DWORD playerMapIsLoaded = 0x517BB8 + 0x7C4; // value is > 0 when map is loaded and running | float
-
 // all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
 DWORD yResSettingsAddr  = 0x5193F8;
@@ -45,6 +43,7 @@ DWORD yResScenarioEditorAddr = 0x2601E6;
 // EE Objects
 
 DWORD EEDataPtrAddr = 0x517BB8; // this will be non 00 when EEData is loaded
+DWORD EEMapPtrAddr = 0x00518378 + 0x44; // this will be non 00 when EEMap is loaded
 
 // ---
 
@@ -245,11 +244,7 @@ bool isLoaded() {
 }
 
 bool isPlaying() {
-    float fMapValue = *(float*)getAbsAddress(playerMapIsLoaded);
-
-    showMessage(fMapValue);
-
-    return fMapValue > FLT_EPSILON;
+    return 0 != *(int*)getAbsAddress(EEMapPtrAddr);
 }
 
 bool isSupportedVersion() {
@@ -263,6 +258,7 @@ bool isSupportedVersion() {
 
 int MainEntry(threadSettings* tSettings) {
     FILE* f;
+    bool bWasPlaying = false;
 
     if (tSettings->bDebugMode) {
         AllocConsole();
@@ -291,26 +287,31 @@ int MainEntry(threadSettings* tSettings) {
     if (tSettings->bWINE) // wine is running in game thread, so we need to throw it out (for now)
         return true;
 
+    while (!isLoaded()) {
+        showMessage("EE is not loaded");
+        Sleep(500);
+    }
+
+    showMessage("EE is loaded");
+    setGameSettings(&tSettings->game);
+
     while (1) {
         Sleep(500);
-        showMessage("Loop");
+        std::cout << ".";
 
-        if (isLoaded()) {
-            // Patch and stop loop, we don't need anything else for the moment
-            showMessage("EE is loaded...");
-            setGameSettings(&tSettings->game);
+        
+        if (isPlaying()) {
+            if (!bWasPlaying) {
+                showMessage("started playing");
 
-            while (!isPlaying()) {
-                showMessage("is not playing");
-                Sleep(500);
+                setCameraParams(&tSettings->camera);
+                bWasPlaying = true;
             }
-
-            setCameraParams(&tSettings->camera);
-            break;
-        }
-        else
-        {
-            showMessage("EE is not loaded...");
+        } else {
+            if (bWasPlaying) {
+                showMessage("stopped playing");
+                bWasPlaying = false;
+            }
         }
     }
 
