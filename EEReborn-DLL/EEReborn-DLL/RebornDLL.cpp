@@ -278,12 +278,12 @@ int MainEntry(threadSettings* tSettings) {
 
     setResolutions(&tSettings->resolution);
 
+    if (tSettings->bWINE) // wine is running in game thread, so we need to throw it out (for now)
+        return true;
+
     while (1) {
         Sleep(500);
         showMessage("Loop");
-
-        if (tSettings->bWINE) // idk why but it's on master
-            break;
 
         if (isLoaded()) {
             // Patch and stop loop, we don't need anything else for the moment
