@@ -284,8 +284,9 @@ int MainEntry(threadSettings* tSettings) {
 
     setResolutions(&tSettings->resolution);
 
-    if (tSettings->bWINE) // wine is running in game thread, so we need to throw it out (for now)
-        return true;
+    if (tSettings->bWINE) {
+        showMessage("WINE detected!");
+    }
 
     while (!isLoaded()) {
         showMessage("EE is not loaded");
@@ -316,6 +317,6 @@ int MainEntry(threadSettings* tSettings) {
 }
 
 DWORD WINAPI RebornDLLThread(LPVOID param) {
-    std::cout << "3...\n";
+    std::cout << "running WINE path...\n";
     return MainEntry(reinterpret_cast<threadSettings*>(param));
 }
