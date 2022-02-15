@@ -277,7 +277,6 @@ int MainEntry(threadSettings* tSettings) {
     }
 
     setResolutions(&tSettings->resolution);
-    setCameraParams(&tSettings->camera);
 
     while (1) {
         Sleep(500);
@@ -290,6 +289,8 @@ int MainEntry(threadSettings* tSettings) {
             // Patch and stop loop, we don't need anything else for the moment
             showMessage("EE is loaded...");
             setGameSettings(&tSettings->game);
+            Sleep(500);
+            setCameraParams(&tSettings->camera);
             break;
         }
         else
