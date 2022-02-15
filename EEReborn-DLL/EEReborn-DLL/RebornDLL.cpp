@@ -289,7 +289,7 @@ int MainEntry(threadSettings* tSettings) {
             // Patch and stop loop, we don't need anything else for the moment
             showMessage("EE is loaded...");
             setGameSettings(&tSettings->game);
-            Sleep(500);
+            Sleep(2000);
             setCameraParams(&tSettings->camera);
             break;
         }
