@@ -43,6 +43,7 @@ DWORD yResScenarioEditorAddr = 0x2601E6;
 // EE Objects
 
 DWORD EEDataPtrAddr = 0x517BB8; // this will be non 00 when EEData is loaded
+DWORD EEMapPtrAddr = 0x00518378 + 0x44; // this will be non 00 when EEMap is loaded
 
 // ---
 
@@ -242,6 +243,10 @@ bool isLoaded() {
     return 0 != *(int*)getAbsAddress(EEDataPtrAddr);
 }
 
+bool isPlaying() {
+    return 0 != *(int*)getAbsAddress(EEMapPtrAddr);
+}
+
 bool isSupportedVersion() {
     char* currVerStr = (char*)getAbsAddress(versionStrStatic);
 
@@ -253,6 +258,7 @@ bool isSupportedVersion() {
 
 int MainEntry(threadSettings* tSettings) {
     FILE* f;
+    bool bWasPlaying = false;
 
     if (tSettings->bDebugMode) {
         AllocConsole();
@@ -281,21 +287,27 @@ int MainEntry(threadSettings* tSettings) {
     if (tSettings->bWINE) // wine is running in game thread, so we need to throw it out (for now)
         return true;
 
-    while (1) {
+    while (!isLoaded()) {
+        showMessage("EE is not loaded");
         Sleep(500);
-        showMessage("Loop");
+    }
 
-        if (isLoaded()) {
-            // Patch and stop loop, we don't need anything else for the moment
-            showMessage("EE is loaded...");
-            setGameSettings(&tSettings->game);
-            Sleep(2000);
+    showMessage("EE is loaded");
+    setGameSettings(&tSettings->game);
+
+    while (1) {
+        Sleep(250);
+        
+        if (isPlaying() && !bWasPlaying) {
+            showMessage("started playing");
+
             setCameraParams(&tSettings->camera);
-            break;
+            bWasPlaying = true;
         }
-        else
-        {
-            showMessage("EE is not loaded...");
+
+        if (!isPlaying() && bWasPlaying) {
+            showMessage("stopped playing");
+            bWasPlaying = false;
         }
     }
 
