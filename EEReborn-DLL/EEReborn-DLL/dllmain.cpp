@@ -22,7 +22,7 @@ bool runsWINE() {
 
 void createConfig() {
 
-    if (PathFileExists(L"./EEReborn.ini")) // Skip if already present
+    if (PathFileExists(L"./Reborn.ini")) // Skip if already present
         return;
 
     HMODULE hModule = NULL;
@@ -42,7 +42,7 @@ void createConfig() {
         return;
 
     LPVOID ptr = LockResource(hRessource);
-    HANDLE hFile = CreateFile(L"./EEReborn.ini", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+    HANDLE hFile = CreateFile(L"./Reborn.ini", GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
     DWORD write;
 
     WriteFile(hFile, ptr, taille, &write, 0);
@@ -67,7 +67,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             return true;
         }
         else {
-            LPCSTR path = "./EEReborn.ini";
+            LPCSTR path = "./Reborn.ini";
 
             createConfig();
 
@@ -83,6 +83,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             tData->resolution.bForceScenarioEditor = GetPrivateProfileIntA("Resolution", "forceScenarioEditor", 0, path) != 0;
 
             tData->camera.bCameraPatch = GetPrivateProfileIntA("Camera", "CameraPatch", 0, path) != 0;
+
+            if (PathFileExists(L"./dreXmod.dll")) // v0.1, for the moment let's just ignore the camera patch if dreX is present
+                tData->camera.bCameraPatch = 0;
             tData->camera.fMaxZHeight = static_cast<float>(GetPrivateProfileIntA("Camera", "MaxZ", 30, path)) * -1.0f;
             tData->camera.fFOV = static_cast<float>(GetPrivateProfileIntA("Camera", "FOV", 60, path)) / 100.0f;
             tData->camera.fFOGDistance = static_cast<float>(GetPrivateProfileIntA("Camera", "Fog", 50, path));
@@ -92,13 +95,12 @@ BOOL APIENTRY DllMain( HMODULE hModule,
             tData->game.maxUnits = GetPrivateProfileIntA("Game", "MaxUnits", 1200, path);
 
             /*
-            _beginthreadex crashes under WINE for some reason
+            _beginthreadex crashes under WINE < 7.1
             CreateThread crashes also on Windows
             */
-            if (tData->bWINE)
-                RebornDLLThread(tData);
-            else
-                HANDLE threadHandle = (HANDLE)_beginthreadex(0, 0, &MainThread, tData, 0, 0);
+
+            //RebornDLLThread(tData); // threadless workaround for old WINE
+            HANDLE threadHandle = (HANDLE)_beginthreadex(0, 0, &MainThread, tData, 0, 0);
             //CreateThread(0, 0, RebornDLLThread, tData, 0, 0); // this crashes for some reason
         }
         break;

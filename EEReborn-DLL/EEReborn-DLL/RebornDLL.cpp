@@ -10,7 +10,7 @@ DWORD MaxZHeightAddr    = 0x42C700; // float
 DWORD CurrZHeightAddr   = 0x518d40; // float
 DWORD LastZHeightAddr   = 0x518D08; // float
 DWORD ZoomStateAddr     = 0x518DB0; // 0.0: fully zoomed in; 1.0: fully zoomed out | float
-DWORD ZoomStyleAddr     = 0x518dc4; // 1, 2, 3 | int
+DWORD ZoomStyleAddr     = 0x518dc4; // 0, 1, 2 | int
 DWORD FOVAddr           = 0x51328c; // float
 DWORD FOGDistanceAddr   = 0x42c704; // float
 DWORD MaxPitchAddr      = 0x513284; // 0.0: 0d pitch; -1.0: 90d pitch | float
@@ -19,6 +19,7 @@ DWORD CurrPitchAddr     = 0x5183c8; // float
 DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
 
 DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
+DWORD versionStrStatic  = 0x4A9030; // static version string
 
 // all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
@@ -42,6 +43,7 @@ DWORD yResScenarioEditorAddr = 0x2601E6;
 // EE Objects
 
 DWORD EEDataPtrAddr = 0x517BB8; // this will be non 00 when EEData is loaded
+DWORD EEMapPtrAddr = 0x00518378 + 0x44; // this will be non 00 when EEMap is loaded
 
 // ---
 
@@ -171,7 +173,7 @@ void setResolutions(resolutionSettings* tSet) {
     bResMismatchX = xWantedRes != xCurrentRes;
     bResMismatchY = yWantedRes != yCurrentRes;
     if (bResMismatchX || bResMismatchY) {
-        std::cout << "Resolution don't match" << std::endl;
+        std::cout << "Resolutions don't match" << std::endl;
         std::cout << "Current : " << xCurrentRes << "x" << yCurrentRes << std::endl;
         std::cout << "Wanted : " << xWantedRes << "x" << yWantedRes << std::endl;
         std::cout << "Set new resolution (type : " << tSet->ResPatchType << ")" << std::endl;
@@ -218,12 +220,14 @@ void setCameraParams(cameraSettings* tSet) {
     showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
     showMessage(*(float*)getAbsAddress(MaxPitchAddr));
     showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
-
+    
     writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->fMaxZHeight, 4);
+    //writeBytes(getAbsAddress(CurrZHeightAddr), &tSet->fMaxZHeight, 4);
     writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->fFOGDistance, 4);
     writeBytes(getAbsAddress(FOVAddr), &tSet->fFOV, 4);
-    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4);
+    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4); 
     writeBytes(getAbsAddress(MaxPitchAddr), &tSet->fCameraPitch, 4);
+    //writeBytes(getAbsAddress(CurrPitchAddr), &tSet->fCameraPitch, 4);
 
     showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
     showMessage(*(float*)getAbsAddress(FOVAddr));
@@ -235,44 +239,26 @@ void setCameraParams(cameraSettings* tSet) {
 
 }
 
-void setVersionString() {
-    showMessage("Pre Version Patch");
-
-    char*** version = (char***)getAbsAddress(versionStrPtrAddr);
-
-    char newVersionString[32];
-    char verStr[] = " (RebornDLL vX.X)";
-    verStr[13] = 0x30 + version_maj;
-    verStr[15] = 0x30 + version_min;
-    DWORD nVp = (DWORD)&newVersionString;
-    DWORD* nVp_p = &nVp;
-
-    // THIS SHIT DOES NOT WORK, DON'T ASK ME WHY!!!!
-    // TODO: fix
-    /*
-    std::stringstream ss;
-    ss << version << " ";
-    ss << "(RebornDLL v" << version_maj << "." << version_min << ")\0";
-    std::string verStr = ss.str();
-    memcpy(nVstr, verStr.c_str(), 33);
-    */
-
-    memcpy(newVersionString, **version, 16);
-    memcpy(newVersionString + 16, verStr, sizeof(verStr));
-
-    showMessage(newVersionString);
-    showMessage(&nVp_p);
-    writeBytes(version, &nVp_p, 4);
-    showMessage(**version);
-    showMessage("Post Version Patch");
-}
-
 bool isLoaded() {
     return 0 != *(int*)getAbsAddress(EEDataPtrAddr);
 }
 
+bool isPlaying() {
+    return 0 != *(int*)getAbsAddress(EEMapPtrAddr);
+}
+
+bool isSupportedVersion() {
+    char* currVerStr = (char*)getAbsAddress(versionStrStatic);
+
+    showMessage("static version string:");
+    showMessage(currVerStr);
+
+    return strcmp(supportedEEC, currVerStr) == 0;
+}
+
 int MainEntry(threadSettings* tSettings) {
     FILE* f;
+    bool bWasPlaying = false;
 
     if (tSettings->bDebugMode) {
         AllocConsole();
@@ -291,26 +277,38 @@ int MainEntry(threadSettings* tSettings) {
         showMessage(tSettings->resolution.bForceScenarioEditor);
     }
 
-    // TODO: check if EE version is supported
+    if (!isSupportedVersion()) {
+        showMessage("this version of EE is not supported by Reborn.dll");
+        return true;
+    }
 
-    setVersionString();
+    setResolutions(&tSettings->resolution);
 
-    for (;; Sleep(5000)) {
-        showMessage("Loop");
+    if (tSettings->bWINE) {
+        showMessage("WINE detected!");
+    }
 
-        setResolutions(&tSettings->resolution);
-        setCameraParams(&tSettings->camera);
+    while (!isLoaded()) {
+        showMessage("EE is not loaded");
+        Sleep(500);
+    }
 
-        if (tSettings->bWINE)
-            break;
+    showMessage("EE is loaded");
+    setGameSettings(&tSettings->game);
 
-        if (isLoaded()) {
-            showMessage("EE is loaded...");
-            setGameSettings(&tSettings->game);
+    while (1) {
+        Sleep(250);
+        
+        if (isPlaying() && !bWasPlaying) {
+            showMessage("started playing");
+
+            setCameraParams(&tSettings->camera);
+            bWasPlaying = true;
         }
-        else
-        {
-            showMessage("EE is not loaded...");
+
+        if (!isPlaying() && bWasPlaying) {
+            showMessage("stopped playing");
+            bWasPlaying = false;
         }
     }
 
@@ -319,25 +317,6 @@ int MainEntry(threadSettings* tSettings) {
 }
 
 DWORD WINAPI RebornDLLThread(LPVOID param) {
-    std::cout << "3...\n";
+    std::cout << "running WINE path...\n";
     return MainEntry(reinterpret_cast<threadSettings*>(param));
-}
-
-// rename to "DllMain" if you want to use this
-bool APIENTRY _DllMain_(HMODULE hModule,
-    DWORD  ul_reason_for_call,
-    LPVOID lpReserved
-) {
-    switch (ul_reason_for_call) {
-    case DLL_PROCESS_ATTACH:
-        //SetProcessDPIAware();
-        //CreateThread(0, 0, RebornDLLThread, hModule, 0, 0);
-        break;
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        FreeLibraryAndExitThread(hModule, 0);
-        break;
-    }
-    return true;
 }

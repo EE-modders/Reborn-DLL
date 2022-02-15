@@ -6,8 +6,10 @@
 #define RES_WIN         0x1
 #define RES_DISABLED    0x0
 
-const int version_maj = 1;
-const int version_min = 3;
+const int version_maj = 0;
+const int version_min = 1;
+
+const char supportedEEC[] = "2002.09.12.v2.00";
 
 struct memoryPTR {
     DWORD base_address;
@@ -17,7 +19,7 @@ struct memoryPTR {
 
 struct cameraSettings {
     bool bCameraPatch;              // enables camera patch
-    int zoomStyle;                  // 0, 1, 2 and 4
+    int zoomStyle;                  // 0, 1, 2
     float fMaxZHeight;              // -0 to -99
     float fFOV;                     // 0.0 to 0.89 (crashes with and above 0.9)
     float fFOGDistance;             // 0.0 to 90.0 (crashes with and above 70.0)
