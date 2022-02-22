@@ -1,5 +1,13 @@
 #pragma once
-#include <Windows.h>
+#include <iostream>
+#include <sstream>
+#include <Shlwapi.h>
+#include <boost/gil.hpp>
+#include <boost/gil/extension/io/jpeg.hpp>
+#include <boost/gil/extension/numeric/sampler.hpp>
+#include <boost/gil/extension/numeric/resample.hpp>
+#include "RebornDLL.h"
+#include "GameMemory.h"
 
 #define RES_CUSTOM      0x3
 #define RES_GAME        0x2
@@ -7,15 +15,10 @@
 #define RES_DISABLED    0x0
 
 const int version_maj = 0;
-const int version_min = 1;
+const int version_min = 2;
 
 const char supportedEEC[] = "2002.09.12.v2.00";
-
-struct memoryPTR {
-    DWORD base_address;
-    int total_offsets;
-    int offsets[];
-};
+const char supportedAOC[] = "2002.8.17.v1.00";
 
 struct cameraSettings {
     bool bCameraPatch;              // enables camera patch
@@ -48,6 +51,25 @@ struct threadSettings {
     struct gameSettings game;
 };
 
-/* functions */
-DWORD WINAPI RebornDLLThread(LPVOID param);
-int MainEntry(threadSettings* tSettings);
+class RebornDLL
+{
+public:
+    GameType gameType = GameType::NA;
+    GameMemory* gameMemory = nullptr;
+
+    RebornDLL(threadSettings* tSettings);
+    int MainEntry();
+    // Wine Fix DWORD WINAPI RebornDLLThread(LPVOID param);
+
+private:
+    threadSettings* tSettings;
+
+    bool isSupportedVersion();
+    bool isPlaying();
+    bool isLoaded();
+    void setCameraParams(cameraSettings* tSet);
+    void setGameSettings(gameSettings* tGameSet);
+    void setLobbyImageResolution(int x, int y);
+    void setResolutions(resolutionSettings* tSet);
+    void getResolution(int& x, int& y, resolutionSettings* tSet);
+};

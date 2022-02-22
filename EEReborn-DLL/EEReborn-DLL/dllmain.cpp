@@ -6,10 +6,6 @@
 #include <thread>
 #include <string>
 
-unsigned int __stdcall MainThread(void* data) {
-    return MainEntry(reinterpret_cast<threadSettings*>(data));
-}
-
 bool runsWINE() {
     HMODULE ntdllMod = GetModuleHandle(L"ntdll.dll");
 
@@ -18,7 +14,6 @@ bool runsWINE() {
     else
         return false;
 }
-
 
 void createConfig() {
 
@@ -51,16 +46,18 @@ void createConfig() {
     FreeResource(hRessource);
 }
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     ){
+unsigned int __stdcall MainThread(void* data) {
+    RebornDLL* reborn = new RebornDLL(reinterpret_cast<threadSettings*>(data));
+    return reborn->MainEntry();
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved){
     switch (ul_reason_for_call){
     case DLL_PROCESS_ATTACH: {
         // shamelessly copied from https://github.com/EE-modders/Empire-Earth-Library/blob/bb2edcba2ac74b00a997b6536e62be9330331da9/EELib/dllmain.cpp#L60
         // there should be a better way of doing this tough
         DWORD Current_Game_ProcessID = GetCurrentProcessId();
-        std::wstring MutexString = L"LibMutexCheck_" + std::to_wstring(Current_Game_ProcessID);
+        std::wstring MutexString = L"RebornMutexCheck_" + std::to_wstring(Current_Game_ProcessID);
         HANDLE handleMutex = CreateMutexW(NULL, TRUE, MutexString.c_str());
 
         if (GetLastError() == ERROR_ALREADY_EXISTS) {
@@ -94,14 +91,13 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
             tData->game.maxUnits = GetPrivateProfileIntA("Game", "MaxUnits", 1200, path);
 
-            /*
-            _beginthreadex crashes under WINE < 7.1
-            CreateThread crashes also on Windows
+            /*  Thread NotesRebornDLLThread
+                CreateThread crashes also on Windows:
+                _beginthreadex crashes under WINE < 7.1
+                RebornDLLThread: threadless workaround for old WINE
             */
 
-            //RebornDLLThread(tData); // threadless workaround for old WINE
             HANDLE threadHandle = (HANDLE)_beginthreadex(0, 0, &MainThread, tData, 0, 0);
-            //CreateThread(0, 0, RebornDLLThread, tData, 0, 0); // this crashes for some reason
         }
         break;
     }
