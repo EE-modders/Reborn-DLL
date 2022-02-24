@@ -3,6 +3,7 @@
 Debug
 Release
 boost
+discord_game_sdk
 
 *.dll
 *.pdb

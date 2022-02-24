@@ -6,8 +6,8 @@
 #include <boost/gil/extension/io/jpeg.hpp>
 #include <boost/gil/extension/numeric/sampler.hpp>
 #include <boost/gil/extension/numeric/resample.hpp>
-#include "RebornDLL.h"
 #include "GameMemory.h"
+#include "EEDiscordRPC.h"
 
 #define RES_CUSTOM      0x3
 #define RES_GAME        0x2
@@ -50,6 +50,13 @@ struct threadSettings {
     struct cameraSettings camera;
     struct gameSettings game;
 };
+
+void showMessage(void* val);
+void showMessage(std::string val);
+void showMessage(float val);
+void showMessage(int val);
+void showMessage(LPCSTR val);
+void showMessage(DWORD val);
 
 class RebornDLL
 {

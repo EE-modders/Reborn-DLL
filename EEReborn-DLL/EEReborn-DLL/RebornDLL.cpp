@@ -1,9 +1,13 @@
 #include "pch.h"
 #include "RebornDLL.h"
+#include "EEDiscordRPC.h"
 
 /*###################################*/
 
 void showMessage(void* val) {
+    std::cout << "DEBUG: " << val << std::endl;
+}
+void showMessage(std::string val) {
     std::cout << "DEBUG: " << val << std::endl;
 }
 void showMessage(float val) {
@@ -56,9 +60,9 @@ void RebornDLL::getResolution(int& x, int& y, resolutionSettings* tSet) {
     }
 }
 
-void resizeImage(const char *org, const char *dest, int x, int y)
+void resizeImage(std::string org, std::string dest, int x, int y)
 {
-    if (PathFileExistsA(org)) {
+    if (PathFileExistsA(org.c_str())) {
         showMessage("Resizing");
         showMessage(org);
         try {
@@ -85,14 +89,17 @@ void resizeImage(const char *org, const char *dest, int x, int y)
 
 void RebornDLL::setLobbyImageResolution(int x, int y)
 {
-    resizeImage("./Data/WONLobby Resources/Images/main_menu_compilation_hq.jpg",
+    const double diff = ((double) x / y);
+    std::string suffix = (diff > 1.55) ? "_16_9" : "_4_3";
+
+    resizeImage("./Data/WONLobby Resources/Images/main_menu_compilation_hq" + suffix + ".jpg",
         "./Data/WONLobby Resources/Images/main_menu_compilation.jpg", x, y);
     if (gameType == GameType::EE) {
-        resizeImage("./Data/WONLobby Resources/Images/bkg_german_hq.jpg",
+        resizeImage("./Data/WONLobby Resources/Images/bkg_german_hq" + suffix + ".jpg",
             "./Data/WONLobby Resources/Images/bkg_german.jpg", x, y);
     }
     else if (gameType == GameType::AoC) {
-        resizeImage("./Data/WONLobby Resources/Images/bkg_fleet_hq.jpg",
+        resizeImage("./Data/WONLobby Resources/Images/bkg_fleet_hq" + suffix + ".jpg",
             "./Data/WONLobby Resources/Images/bkg_fleet.jpg", x, y);
     }
 }
@@ -146,7 +153,6 @@ void RebornDLL::setGameSettings(gameSettings* tGameSet) {
     showMessage("Pre Game Settings");
 
     if (tGameSet->maxUnits != 0) {
-        showMessage(&tGameSet->maxUnits);
         int* maxU_p = (int*)tracePointer(&gameMemory->maxUnitsPTR);
         writeBytes(maxU_p, &tGameSet->maxUnits, 4);
     }
@@ -253,7 +259,6 @@ int RebornDLL::MainEntry() {
         showMessage("Unnable to detect EE & AoC ! Check the name of the game executable !");
     }
 
-
     setResolutions(&tSettings->resolution);
 
     if (tSettings->bWINE) {
@@ -267,6 +272,8 @@ int RebornDLL::MainEntry() {
 
     showMessage("EE is loaded");
     setGameSettings(&tSettings->game);
+
+    EEDiscordRPC* rpc = new EEDiscordRPC(gameType);
 
     while (1) {
         Sleep(250);
@@ -282,6 +289,8 @@ int RebornDLL::MainEntry() {
             showMessage("stopped playing");
             bWasPlaying = false;
         }
+
+        rpc->updateStatus("test", "sub text");
     }
 
     FreeConsole();
