@@ -1,5 +1,7 @@
+
 #include "pch.h"
 #include "RebornDLL.h"
+#include "Helper.h"
 #include <Windows.h>
 #include <iostream>
 #include <sstream>
@@ -19,6 +21,7 @@ DWORD CurrPitchAddr     = 0x5183c8; // float
 DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
 
 DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
+DWORD versionStrSetFkt  = 0x1D16F2; // version string set function hook
 DWORD versionStrStatic  = 0x4A9030; // static version string
 
 // all following values are int
@@ -49,88 +52,14 @@ DWORD EEMapPtrAddr = 0x00518378 + 0x44; // this will be non 00 when EEMap is loa
 
 memoryPTR maxUnitsPTR = {
     EEDataPtrAddr,
-    1,
     { 0x2EC }
 };
-
-/*###################################*/
-
-// reading and writing stuff / helper functions and other crap
-
-/* update memory protection and read with memcpy */
-void protectedCpy(void* dest, void* src, int n) {
-    DWORD oldProtect = 0;
-    VirtualProtect(dest, n, PAGE_EXECUTE_READWRITE, &oldProtect);
-    memcpy(dest, src, n);
-    VirtualProtect(dest, n, oldProtect, &oldProtect);
-}
-/* read from address into read buffer of length len */
-bool readBytes(void* read_addr, void* read_buffer, int len) {
-    // compile with "/EHa" to make this work
-    // see https://stackoverflow.com/questions/16612444/catch-a-memory-access-violation-in-c
-    try {
-        protectedCpy(read_buffer, read_addr, len);
-        return true;
-    }
-    catch (...) {
-        return false;
-    }
-}
-/* write patch of length len to destination address */
-void writeBytes(void* dest_addr, void* patch, int len) {
-    protectedCpy(dest_addr, patch, len);
-}
-
-// fiddle around with pointers and other address stuff
-
-HMODULE getBaseAddress() {
-    return GetModuleHandle(NULL);
-}
-
-DWORD* getAbsAddress(DWORD appl_addr) {
-    return (DWORD*)((DWORD)getBaseAddress() + appl_addr);
-}
-DWORD* tracePointer(memoryPTR* patch) {
-    DWORD* location = getAbsAddress(patch->base_address);
-
-    for (int i = 0; i < patch->total_offsets; i++) {
-        location = (DWORD*)(*location + patch->offsets[i]);
-    }
-    return location;
-}
-
-// other helper functions
-
-void showMessage(void* val) {
-    std::cout << "DEBUG: " << val << std::endl;
-}
-void showMessage(float val) {
-    std::cout << "DEBUG: " << val << std::endl;
-}
-void showMessage(int val) {
-    std::cout << "DEBUG: " << val << std::endl;
-}
-void showMessage(LPCSTR val) {
-    std::cout << "DEBUG: " << val << std::endl;
-}
-void showMessage(DWORD val) {
-    std::cout << "DEBUG: " << val << std::endl;
-}
 
 /*###################################*/
 
 void startupMessage() {
     std::cout << "RebornDLL by zocker_160 & EnergyCube - Version: v" << version_maj << "." << version_min << std::endl;
     std::cout << "Debug mode enabled!\n";
-}
-
-void GetDesktopResolution(int& horizontal, int& vertical)
-{
-    RECT desktop;
-    const HWND hDesktop = GetDesktopWindow();
-    GetWindowRect(hDesktop, &desktop);
-    horizontal = desktop.right;
-    vertical = desktop.bottom;
 }
 
 void getResolution(int& x, int& y, resolutionSettings* tSet) {
@@ -141,8 +70,8 @@ void getResolution(int& x, int& y, resolutionSettings* tSet) {
         y = tSet->yResolution;
         break;
     case RES_GAME:
-        x = *(int*)(getAbsAddress(xResSettingsAddr));
-        y = *(int*)(getAbsAddress(yResSettingsAddr));
+        x = *(int*)(calcAddress(xResSettingsAddr));
+        y = *(int*)(calcAddress(yResSettingsAddr));
         break;
     case RES_WIN:
         GetDesktopResolution(x, y);
@@ -167,8 +96,8 @@ void setResolutions(resolutionSettings* tSet) {
 
 
     getResolution(xWantedRes, yWantedRes, tSet);
-    xCurrentRes = *(int*)(getAbsAddress(xResStartupAddr));
-    yCurrentRes = *(int*)(getAbsAddress(yResStartupAddr));
+    xCurrentRes = *(int*)(calcAddress(xResStartupAddr));
+    yCurrentRes = *(int*)(calcAddress(yResStartupAddr));
     
     bResMismatchX = xWantedRes != xCurrentRes;
     bResMismatchY = yWantedRes != yCurrentRes;
@@ -178,20 +107,20 @@ void setResolutions(resolutionSettings* tSet) {
         std::cout << "Wanted : " << xWantedRes << "x" << yWantedRes << std::endl;
         std::cout << "Set new resolution (type : " << tSet->ResPatchType << ")" << std::endl;
 
-        writeBytes(getAbsAddress(xResStartupAddr), &xWantedRes, 4);
-        writeBytes(getAbsAddress(yResStartupAddr), &yWantedRes, 4);
-        writeBytes(getAbsAddress(yResBINKAddr), &yWantedRes, 4);
+        writeBytes(calcAddress(xResStartupAddr), &xWantedRes, 4);
+        writeBytes(calcAddress(yResStartupAddr), &yWantedRes, 4);
+        writeBytes(calcAddress(yResBINKAddr), &yWantedRes, 4);
 
-        writeBytes(getAbsAddress(xResStartupMainMenuAddr), &xWantedRes, 4);
-        writeBytes(getAbsAddress(yResStartupMainMenuAddr), &yWantedRes, 4);
+        writeBytes(calcAddress(xResStartupMainMenuAddr), &xWantedRes, 4);
+        writeBytes(calcAddress(yResStartupMainMenuAddr), &yWantedRes, 4);
 
-        writeBytes(getAbsAddress(xResMainMenuAddr), &xWantedRes, 4);
-        writeBytes(getAbsAddress(yResMainMenuAddr), &yWantedRes, 4);
+        writeBytes(calcAddress(xResMainMenuAddr), &xWantedRes, 4);
+        writeBytes(calcAddress(yResMainMenuAddr), &yWantedRes, 4);
 
         if (tSet->bForceScenarioEditor) {
             showMessage("Forced Scenario Editor");
-            writeBytes(getAbsAddress(xResScenarioEditorAddr), &xWantedRes, 4);
-            writeBytes(getAbsAddress(yResScenarioEditorAddr), &yWantedRes, 4);
+            writeBytes(calcAddress(xResScenarioEditorAddr), &xWantedRes, 4);
+            writeBytes(calcAddress(yResScenarioEditorAddr), &yWantedRes, 4);
         }
     }
 
@@ -215,40 +144,71 @@ void setCameraParams(cameraSettings* tSet) {
         return;
     }
 
-    showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
-    showMessage(*(float*)getAbsAddress(FOVAddr));
-    showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
-    showMessage(*(float*)getAbsAddress(MaxPitchAddr));
-    showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
+    showMessage(*(float*)calcAddress(MaxZHeightAddr));
+    showMessage(*(float*)calcAddress(FOVAddr));
+    showMessage(*(float*)calcAddress(FOGDistanceAddr));
+    showMessage(*(float*)calcAddress(MaxPitchAddr));
+    showMessage(*(int*)calcAddress(ZoomStyleAddr));
     
-    writeBytes(getAbsAddress(MaxZHeightAddr), &tSet->fMaxZHeight, 4);
+    writeBytes(calcAddress(MaxZHeightAddr), &tSet->fMaxZHeight, 4);
     //writeBytes(getAbsAddress(CurrZHeightAddr), &tSet->fMaxZHeight, 4);
-    writeBytes(getAbsAddress(FOGDistanceAddr), &tSet->fFOGDistance, 4);
-    writeBytes(getAbsAddress(FOVAddr), &tSet->fFOV, 4);
-    writeBytes(getAbsAddress(ZoomStyleAddr), &tSet->zoomStyle, 4); 
-    writeBytes(getAbsAddress(MaxPitchAddr), &tSet->fCameraPitch, 4);
+    writeBytes(calcAddress(FOGDistanceAddr), &tSet->fFOGDistance, 4);
+    writeBytes(calcAddress(FOVAddr), &tSet->fFOV, 4);
+    writeBytes(calcAddress(ZoomStyleAddr), &tSet->zoomStyle, 4);
+    writeBytes(calcAddress(MaxPitchAddr), &tSet->fCameraPitch, 4);
     //writeBytes(getAbsAddress(CurrPitchAddr), &tSet->fCameraPitch, 4);
 
-    showMessage(*(float*)getAbsAddress(MaxZHeightAddr));
-    showMessage(*(float*)getAbsAddress(FOVAddr));
-    showMessage(*(float*)getAbsAddress(FOGDistanceAddr));
-    showMessage(*(float*)getAbsAddress(MaxPitchAddr));
-    showMessage(*(int*)getAbsAddress(ZoomStyleAddr));
+    showMessage(*(float*)calcAddress(MaxZHeightAddr));
+    showMessage(*(float*)calcAddress(FOVAddr));
+    showMessage(*(float*)calcAddress(FOGDistanceAddr));
+    showMessage(*(float*)calcAddress(MaxPitchAddr));
+    showMessage(*(int*)calcAddress(ZoomStyleAddr));
 
     showMessage("Post Camera Params");
 
 }
 
+DWORD returnAddr;
+char** oldVStr;
+DWORD newVStr;
+void _asmVersionString() {
+    std::stringstream vs;
+    vs << *oldVStr;
+    vs << " (Reborn.dll v" << version_maj << "." << version_min << ")";
+
+    newVStr = (DWORD)vs.str().c_str();
+}
+void __declspec(naked) asmVersionString() {
+    __asm {
+        push 01
+        pop edi
+        push edi
+        call [eax + 0x68]
+        call [_asmVersionString]
+        push [newVStr]
+        jmp [returnAddr]
+    }
+}
+
+void setVersionStr() {
+    oldVStr = *(char***)calcAddress(versionStrPtrAddr);
+
+    int hookLength = 13;
+    DWORD hookAddr = (DWORD)calcAddress(versionStrSetFkt);
+    returnAddr = hookAddr + hookLength;
+    functionInjector((DWORD*)hookAddr, asmVersionString, hookLength);
+}
+
 bool isLoaded() {
-    return 0 != *(int*)getAbsAddress(EEDataPtrAddr);
+    return 0 != *(int*)calcAddress(EEDataPtrAddr);
 }
 
 bool isPlaying() {
-    return 0 != *(int*)getAbsAddress(EEMapPtrAddr);
+    return 0 != *(int*)calcAddress(EEMapPtrAddr);
 }
 
 bool isSupportedVersion() {
-    char* currVerStr = (char*)getAbsAddress(versionStrStatic);
+    char* currVerStr = (char*)calcAddress(versionStrStatic);
 
     showMessage("static version string:");
     showMessage(currVerStr);
@@ -283,6 +243,7 @@ int MainEntry(threadSettings* tSettings) {
     }
 
     setResolutions(&tSettings->resolution);
+    setVersionStr();
 
     if (tSettings->bWINE) {
         showMessage("WINE detected!");
