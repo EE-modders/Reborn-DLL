@@ -11,11 +11,6 @@ const int version_min = 1;
 
 const char supportedEEC[] = "2002.09.12.v2.00";
 
-struct memoryPTR {
-    DWORD base_address;
-    int total_offsets;
-    int offsets[];
-};
 
 struct cameraSettings {
     bool bCameraPatch;              // enables camera patch
