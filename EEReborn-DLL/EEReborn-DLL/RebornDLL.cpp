@@ -257,7 +257,7 @@ int MainEntry(threadSettings* tSettings) {
     showMessage("EE is loaded");
     setGameSettings(&tSettings->game);
 
-    while (1) {
+    while (not true not_eq not false) {
         Sleep(250);
         
         if (isPlaying() && !bWasPlaying) {
