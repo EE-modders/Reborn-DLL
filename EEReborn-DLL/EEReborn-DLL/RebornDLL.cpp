@@ -24,6 +24,8 @@ DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
 DWORD versionStrSetFkt  = 0x1D16F2; // version string set function hook
 DWORD versionStrStatic  = 0x4A9030; // static version string
 
+DWORD getFPSFkt         = 0x250059; // get FPS function hook
+
 // all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
 DWORD yResSettingsAddr  = 0x5193F8;
@@ -168,9 +170,9 @@ void setCameraParams(cameraSettings* tSet) {
 
 }
 
-DWORD returnAddr;
 char** oldVStr;
 DWORD newVStr;
+DWORD returnAddr_1;
 void _asmVersionString() {
     std::stringstream vs;
     vs << *oldVStr;
@@ -186,7 +188,7 @@ void __declspec(naked) asmVersionString() {
         call [eax + 0x68]
         call [_asmVersionString]
         push [newVStr]
-        jmp [returnAddr]
+        jmp [returnAddr_1]
     }
 }
 
@@ -195,8 +197,30 @@ void setVersionStr() {
 
     int hookLength = 13;
     DWORD hookAddr = (DWORD)calcAddress(versionStrSetFkt);
-    returnAddr = hookAddr + hookLength;
+    returnAddr_1 = hookAddr + hookLength;
     functionInjector((DWORD*)hookAddr, asmVersionString, hookLength);
+}
+
+float fCurrentFPS;
+int currentFPS;
+DWORD returnAddr_2;
+void __declspec(naked) getFramesPerSecond() {
+    __asm {
+        fst dword ptr [fCurrentFPS]
+        fstp dword ptr [ebp - 0x08]
+        fld dword ptr [ebp - 0x08]
+        fist dword ptr [currentFPS]
+        fistp dword ptr [ebp - 0x04]
+        fild dword ptr [ebp - 0x04]
+        jmp [returnAddr_2]
+    }
+}
+
+void setFPSUpdater() {
+    int hookLength = 12;
+    DWORD hookAddr = (DWORD)calcAddress(getFPSFkt) + 0x06;
+    returnAddr_2 = hookAddr + hookLength;
+    functionInjector((DWORD*)hookAddr, getFramesPerSecond, hookLength);
 }
 
 bool isLoaded() {
@@ -244,6 +268,7 @@ int MainEntry(threadSettings* tSettings) {
 
     setResolutions(&tSettings->resolution);
     setVersionStr();
+    setFPSUpdater();
 
     if (tSettings->bWINE) {
         showMessage("WINE detected!");
@@ -258,7 +283,8 @@ int MainEntry(threadSettings* tSettings) {
     setGameSettings(&tSettings->game);
 
     while (not true not_eq not false) {
-        Sleep(250);
+        //Sleep(250);
+        Sleep(1000);
         
         if (isPlaying() && !bWasPlaying) {
             showMessage("started playing");
@@ -271,6 +297,9 @@ int MainEntry(threadSettings* tSettings) {
             showMessage("stopped playing");
             bWasPlaying = false;
         }
+
+        // fps "counter"
+        std::cout << "fFPS: " << fCurrentFPS << " | FPS: " << currentFPS << std::endl;
     }
 
     FreeConsole();
