@@ -25,6 +25,9 @@ DWORD versionStrSetFkt  = 0x1D16F2; // version string set function hook
 DWORD versionStrStatic  = 0x4A9030; // static version string
 
 DWORD getFPSFkt         = 0x250059; // get FPS function hook
+DWORD checkFPSOverlayFkt= 0x250026; // function which checks if FPS overlay should be shown or not
+DWORD overlayCheck1     = 0x250021; // checks if F11 key was pressed
+DWORD overlayCheck2     = 0x250026;
 
 // all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
@@ -170,6 +173,8 @@ void setCameraParams(cameraSettings* tSet) {
 
 }
 
+/* --function hooks-- */
+
 char** oldVStr;
 DWORD newVStr;
 DWORD returnAddr_1;
@@ -221,7 +226,26 @@ void setFPSUpdater() {
     DWORD hookAddr = (DWORD)calcAddress(getFPSFkt) + 0x06;
     returnAddr_2 = hookAddr + hookLength;
     functionInjector((DWORD*)hookAddr, getFramesPerSecond, hookLength);
+
+    /* enforce F11 overlay at all times */
+    nopper(calcAddress(overlayCheck1), 2);
+    nopper(calcAddress(overlayCheck2), 6);
 }
+
+/*
+void __declspec(naked) checkFPSOverlay() {
+    __asm {
+        jne []
+    }
+}
+
+void setFPSOverlayChecker() {
+    int hookLength = 6;
+    DWORD hookAddr = (DWORD)calcAddress(checkFPSOverlayFkt);
+
+    functionInjector((DWORD*)hookAddr, checkFPSOverlay, hookLength);
+}
+*/
 
 bool isLoaded() {
     return 0 != *(int*)calcAddress(EEDataPtrAddr);
@@ -298,8 +322,9 @@ int MainEntry(threadSettings* tSettings) {
             bWasPlaying = false;
         }
 
-        // fps "counter"
+        /* fps "counter" */
         std::cout << "fFPS: " << fCurrentFPS << " | FPS: " << currentFPS << std::endl;
+
     }
 
     FreeConsole();

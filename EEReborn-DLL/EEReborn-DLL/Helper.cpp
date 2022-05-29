@@ -58,19 +58,22 @@ DWORD* tracePointer(memoryPTR* patch) {
     return location;
 }
 
+void nopper(void* startAddr, int len) {
+    BYTE nop = 0x90;
+    for (int i = 0; i < len; i++)
+        writeBytes((DWORD*)((DWORD)startAddr + i), &nop, 1);
+}
+
 bool functionInjector(void* hookAddr, void* function, int len) {
 
     if (len < 5)
         return false;
 
-    BYTE nop = 0x90;
     BYTE jmp = 0xE9;
     DWORD relAddr = ((DWORD)function - (DWORD)hookAddr) - 5;
 
     /* NOP needed area */
-    for (int i = 0; i < len; i++) {
-        writeBytes((DWORD*)((DWORD)hookAddr + i), &nop, 1);
-    }
+    nopper(hookAddr, len);
 
     writeBytes(hookAddr, &jmp, 1);
     writeBytes((DWORD*)((DWORD)hookAddr + 1), &relAddr, 4);

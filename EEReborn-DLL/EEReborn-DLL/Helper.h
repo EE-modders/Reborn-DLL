@@ -24,6 +24,7 @@ HMODULE getMatchmakingAddress();
 DWORD* calcAddress(DWORD appl_addr);
 DWORD* tracePointer(memoryPTR* patch);
 
+void nopper(void* startAddr, int len);
 bool functionInjector(void* toHook, void* function, int len);
 
 void showMessage(float val);
