@@ -20,14 +20,17 @@ DWORD CurrPitchAddr     = 0x5183c8; // float
 
 DWORD resSwitchCheckAddr = 0x25FAC2; // 2 bytes containing JE 15
 
-DWORD versionStrPtrAddr = 0x1D16FB; // version string pointer
-DWORD versionStrSetFkt  = 0x1D16F2; // version string set function hook
-DWORD versionStrStatic  = 0x4A9030; // static version string
+DWORD versionStrSetFkt          = 0x1D16F2; // version string set function hook
+DWORD versionStrStatic          = 0x4A9030; // static version string
+DWORD versionStrWHashPtrAddr    = 0x513264; // dynamic version string as char**
+DWORD versionStrPtrAddr         = 0x1D16FB; // addr of char*** (probably UString class) parameter passed to LLE.sprintf function
+                                            // which loads it into the version string label in main menu
 
-DWORD getFPSFkt         = 0x250059; // get FPS function hook
-DWORD checkFPSOverlayFkt= 0x250026; // function which checks if FPS overlay should be shown or not
-DWORD overlayCheck1     = 0x250021; // checks if F11 key was pressed
-DWORD overlayCheck2     = 0x250026;
+DWORD getFPSFkt             = 0x250059; // get FPS function hook
+DWORD checkFPSOverlayFkt    = 0x250026; // function which checks if FPS overlay should be shown or not
+DWORD checkFPSReturn        = 0x2500CB; // return ADDR of check FPS function
+DWORD overlayCheck1         = 0x250021; // checks if F11 key was pressed
+DWORD overlayCheck2         = 0x250026;
 
 // all following values are int
 DWORD xResSettingsAddr  = 0x5193FC; // xRes set in the ingame settings
@@ -175,34 +178,47 @@ void setCameraParams(cameraSettings* tSet) {
 
 /* --function hooks-- */
 
-char** oldVStr;
-DWORD newVStr;
-DWORD returnAddr_1;
-void _asmVersionString() {
+char* newVersionStr;
+char** newVersionStrPtr = &newVersionStr;
+DWORD dxmVersionStr;
+DWORD asmVersionStrReturnAddr;
+void _asmVersionStr() {
+    //char** versionStr = (char**)calcAddress(versionStrWHashPtrAddr);
+    char*** vStrPtr = (char***)calcAddress(versionStrPtrAddr);
+
+    // don't do anything if string is already set to ours
+    if ( *(DWORD*)vStrPtr == (DWORD)&newVersionStr ) {
+        showMessage("string pointers equal, nothing to do");
+        return;
+    }
+
     std::stringstream vs;
-    vs << *oldVStr;
+    vs << **vStrPtr;
     vs << " (Reborn.dll v" << version_maj << "." << version_min << ")";
 
-    newVStr = (DWORD)vs.str().c_str();
+    const int length = vs.str().length() + 1;
+    newVersionStr = new char[length];
+
+    strcpy_s(newVersionStr, length, vs.str().c_str());
+    writeBytes(vStrPtr, &newVersionStrPtr, 4);
 }
 void __declspec(naked) asmVersionString() {
     __asm {
+        pushad
+        call [_asmVersionStr]
+        popad
         push 01
         pop edi
         push edi
         call [eax + 0x68]
-        call [_asmVersionString]
-        push [newVStr]
-        jmp [returnAddr_1]
+        jmp [asmVersionStrReturnAddr]
     }
 }
 
 void setVersionStr() {
-    oldVStr = *(char***)calcAddress(versionStrPtrAddr);
-
-    int hookLength = 13;
+    const int hookLength = 7;
     DWORD hookAddr = (DWORD)calcAddress(versionStrSetFkt);
-    returnAddr_1 = hookAddr + hookLength;
+    asmVersionStrReturnAddr = hookAddr + hookLength;
     functionInjector((DWORD*)hookAddr, asmVersionString, hookLength);
 }
 
@@ -224,7 +240,8 @@ void __declspec(naked) getFramesPerSecond() {
 void setFPSUpdater() {
     int hookLength = 12;
     DWORD hookAddr = (DWORD)calcAddress(getFPSFkt) + 0x06;
-    returnAddr_2 = hookAddr + hookLength;
+    //returnAddr_2 = hookAddr + hookLength;
+    returnAddr_2 = (DWORD)calcAddress(checkFPSReturn);
     functionInjector((DWORD*)hookAddr, getFramesPerSecond, hookLength);
 
     /* enforce F11 overlay at all times */
@@ -292,7 +309,7 @@ int MainEntry(threadSettings* tSettings) {
 
     setResolutions(&tSettings->resolution);
     setVersionStr();
-    setFPSUpdater();
+    //setFPSUpdater();
 
     if (tSettings->bWINE) {
         showMessage("WINE detected!");
@@ -302,6 +319,8 @@ int MainEntry(threadSettings* tSettings) {
         showMessage("EE is not loaded");
         Sleep(500);
     }
+
+
 
     showMessage("EE is loaded");
     setGameSettings(&tSettings->game);
@@ -323,7 +342,7 @@ int MainEntry(threadSettings* tSettings) {
         }
 
         /* fps "counter" */
-        std::cout << "fFPS: " << fCurrentFPS << " | FPS: " << currentFPS << std::endl;
+        //std::cout << "fFPS: " << fCurrentFPS << " | FPS: " << currentFPS << std::endl;
 
     }
 
