@@ -216,10 +216,12 @@ void __declspec(naked) asmVersionString() {
 }
 
 void setVersionStr() {
-    const int hookLength = 7;
-    DWORD hookAddr = (DWORD)calcAddress(versionStrSetFkt);
-    asmVersionStrReturnAddr = hookAddr + hookLength;
-    functionInjector((DWORD*)hookAddr, asmVersionString, hookLength);
+    functionInjector(
+        calcAddress(versionStrSetFkt),
+        asmVersionString,
+        asmVersionStrReturnAddr,
+        7
+    );
 }
 
 float fCurrentFPS;
@@ -238,11 +240,12 @@ void __declspec(naked) getFramesPerSecond() {
 }
 
 void setFPSUpdater() {
-    int hookLength = 12;
-    DWORD hookAddr = (DWORD)calcAddress(getFPSFkt) + 0x06;
-    //returnAddr_2 = hookAddr + hookLength;
-    returnAddr_2 = (DWORD)calcAddress(checkFPSReturn);
-    functionInjector((DWORD*)hookAddr, getFramesPerSecond, hookLength);
+    functionInjector(
+        calcAddress(getFPSFkt) + 0x06,
+        getFramesPerSecond,
+        returnAddr_2,
+        12
+    );
 
     /* enforce F11 overlay at all times */
     nopper(calcAddress(overlayCheck1), 2);

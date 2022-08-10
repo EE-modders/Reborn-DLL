@@ -25,7 +25,8 @@ DWORD* calcAddress(DWORD appl_addr);
 DWORD* tracePointer(memoryPTR* patch);
 
 void nopper(void* startAddr, int len);
-bool functionInjector(void* toHook, void* function, int len);
+bool functionInjectorOld(void* toHook, void* function, int len);
+bool functionInjector(void* hookAddr, void* function, DWORD& returnAddr, int len);
 
 void showMessage(float val);
 void showMessage(int val);

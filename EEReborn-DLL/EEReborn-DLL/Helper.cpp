@@ -64,7 +64,7 @@ void nopper(void* startAddr, int len) {
         writeBytes((DWORD*)((DWORD)startAddr + i), &nop, 1);
 }
 
-bool functionInjector(void* hookAddr, void* function, int len) {
+bool functionInjectorOld(void* hookAddr, void* function, int len) {
 
     if (len < 5)
         return false;
@@ -80,7 +80,21 @@ bool functionInjector(void* hookAddr, void* function, int len) {
 
     return true;
 }
+bool functionInjector(void* hookAddr, void* function, DWORD& returnAddr, int len) {
+    if (len < 5)
+        return false;
 
+    BYTE jmp = 0xE9;
+    DWORD relAddr = ((DWORD)function - (DWORD)hookAddr) - 5;
+    returnAddr = (DWORD)hookAddr + len;
+
+    nopper(hookAddr, len);
+
+    writeBytes(hookAddr, &jmp, 1);
+    writeBytes((DWORD*)((DWORD)hookAddr + 1), &relAddr, 4);
+
+    return true;
+}
 
 /* logging stuff */
 void showMessage(float val) {
