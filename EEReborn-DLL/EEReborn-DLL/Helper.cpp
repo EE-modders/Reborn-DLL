@@ -125,8 +125,7 @@ void showMessage(LPCSTR val) {
 
 /* resolution stuff */
 
-void GetDesktopResolution(int& horizontal, int& vertical)
-{
+void GetDesktopResolution(int& horizontal, int& vertical) {
     RECT desktop;
     // Get a handle to the desktop window
     const HWND hDesktop = GetDesktopWindow();
