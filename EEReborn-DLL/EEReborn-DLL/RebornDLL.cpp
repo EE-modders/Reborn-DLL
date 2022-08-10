@@ -227,6 +227,7 @@ void setVersionStr() {
 float fCurrentFPS;
 int currentFPS;
 DWORD returnAddr_2;
+DWORD fpshookReturnAddr;
 void __declspec(naked) getFramesPerSecond() {
     __asm {
         fst dword ptr [fCurrentFPS]
@@ -239,7 +240,33 @@ void __declspec(naked) getFramesPerSecond() {
     }
 }
 
+DWORD LLETMPoll = *calcAddress(0x42329C);
+unsigned int nRenderedFrames = 0;
+void __declspec(naked) getFPSNew() {
+    __asm {
+        push eax
+        mov eax, [nRenderedFrames]
+        add eax, 0x1
+        mov [nRenderedFrames], eax
+        pop eax
+
+        call [LLETMPoll]
+        jmp [fpshookReturnAddr]
+    }
+}
+
 void setFPSUpdater() {
+
+    functionInjector(
+        //calcAddress(0x250021),
+        //calcAddress(0x25001A),
+        calcAddress(0x24E29E),
+        getFPSNew,
+        fpshookReturnAddr,
+        6
+    );
+
+    return;
     functionInjector(
         calcAddress(getFPSFkt) + 0x06,
         getFramesPerSecond,
@@ -312,7 +339,7 @@ int MainEntry(threadSettings* tSettings) {
 
     setResolutions(&tSettings->resolution);
     setVersionStr();
-    //setFPSUpdater();
+    setFPSUpdater();
 
     if (tSettings->bWINE) {
         showMessage("WINE detected!");
@@ -328,9 +355,11 @@ int MainEntry(threadSettings* tSettings) {
     showMessage("EE is loaded");
     setGameSettings(&tSettings->game);
 
+    const int updateInterval = 1;
+    long lastInterval = 0;
+
     while (not true not_eq not false) {
-        //Sleep(250);
-        Sleep(1000);
+        Sleep(updateInterval *1000);
         
         if (isPlaying() && !bWasPlaying) {
             showMessage("started playing");
@@ -345,8 +374,8 @@ int MainEntry(threadSettings* tSettings) {
         }
 
         /* fps "counter" */
-        //std::cout << "fFPS: " << fCurrentFPS << " | FPS: " << currentFPS << std::endl;
-
+        std::cout << "FPS: " << (nRenderedFrames/updateInterval) << std::endl;
+        nRenderedFrames = 0;
     }
 
     FreeConsole();
